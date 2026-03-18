@@ -1,0 +1,201 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "flextable",
+  "projectDescription": "An R package providing a grammar for creating and customizing publication-ready tables for HTML, PDF, Word, PowerPoint, RTF, and R grid graphics outputs.",
+  "theme": "linden",
+  "primaryColor": "#2B5797",
+  "lightColor": "#5B8DD9",
+  "darkColor": "#1A3A6B",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/table-structure",
+              "concepts/selectors",
+              "concepts/output-formats"
+            ]
+          },
+          {
+            "group": "Formatting",
+            "pages": [
+              "formatting/text-formatting",
+              "formatting/cell-formatting",
+              "formatting/borders",
+              "formatting/alignment-padding",
+              "formatting/themes"
+            ]
+          },
+          {
+            "group": "Layout",
+            "pages": [
+              "layout/headers-footers",
+              "layout/merging-cells",
+              "layout/column-row-sizing",
+              "layout/cell-content"
+            ]
+          },
+          {
+            "group": "Data Summaries",
+            "pages": [
+              "summaries/summarizor",
+              "summaries/tabulator",
+              "summaries/statistical-models",
+              "summaries/cross-tabulations"
+            ]
+          },
+          {
+            "group": "Export & Output",
+            "pages": [
+              "output/rmarkdown-quarto",
+              "output/word-powerpoint",
+              "output/html",
+              "output/pdf-latex",
+              "output/images"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/defaults",
+              "advanced/inline-content",
+              "advanced/mini-graphics",
+              "advanced/captions"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Constructor",
+            "pages": [
+              "reference/flextable",
+              "reference/qflextable",
+              "reference/as-flextable"
+            ]
+          },
+          {
+            "group": "Text Formatting",
+            "pages": [
+              "reference/bold",
+              "reference/italic",
+              "reference/color",
+              "reference/fontsize",
+              "reference/font",
+              "reference/highlight",
+              "reference/style"
+            ]
+          },
+          {
+            "group": "Cell & Border",
+            "pages": [
+              "reference/bg",
+              "reference/border",
+              "reference/border-outer-inner",
+              "reference/padding",
+              "reference/valign",
+              "reference/align"
+            ]
+          },
+          {
+            "group": "Layout Functions",
+            "pages": [
+              "reference/merge",
+              "reference/width-height",
+              "reference/autofit",
+              "reference/rotate",
+              "reference/set-table-properties"
+            ]
+          },
+          {
+            "group": "Headers & Footers",
+            "pages": [
+              "reference/add-header-footer",
+              "reference/set-header-labels",
+              "reference/footnote",
+              "reference/set-caption"
+            ]
+          },
+          {
+            "group": "Content & Formatters",
+            "pages": [
+              "reference/compose",
+              "reference/colformat",
+              "reference/as-paragraph",
+              "reference/inline-elements"
+            ]
+          },
+          {
+            "group": "Themes",
+            "pages": [
+              "reference/themes"
+            ]
+          },
+          {
+            "group": "Saving",
+            "pages": [
+              "reference/save-as-docx",
+              "reference/save-as-html",
+              "reference/save-as-image",
+              "reference/save-as-pptx",
+              "reference/save-as-rtf"
+            ]
+          },
+          {
+            "group": "Defaults",
+            "pages": [
+              "reference/set-flextable-defaults"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Grammar-based API for creating publication-quality tables in R",
+    "Multi-format output: HTML, PDF, Word, PowerPoint, RTF, Grid Graphics",
+    "Rich text formatting: bold, italic, color, font, highlight per cell",
+    "Cell merging (horizontal and vertical) for complex layouts",
+    "Built-in themes: vanilla, booktabs, APA, zebra, box, and more",
+    "Statistical model and summary table generation via summarizor and tabulator",
+    "Seamless R Markdown and Quarto integration with knitr chunk options",
+    "Mini graphics in cells: minibar, lollipop, linerange, ggplot2 plots",
+    "Captions with auto-numbering and cross-references",
+    "Global defaults system for consistent styling across documents"
+  ],
+  "publicApiSurface": [
+    "flextable()",
+    "qflextable()",
+    "as_flextable()",
+    "bold()", "italic()", "color()", "fontsize()", "font()", "highlight()", "style()",
+    "bg()", "border()", "border_outer()", "border_inner()", "border_remove()",
+    "align()", "valign()", "padding()", "line_spacing()", "rotate()",
+    "merge_h()", "merge_v()", "merge_at()", "merge_none()",
+    "add_header_row()", "add_footer_row()", "add_header_lines()", "add_footer_lines()",
+    "set_header_labels()", "set_header_df()", "set_footer_df()",
+    "footnote()", "set_caption()",
+    "compose()", "as_paragraph()", "as_chunk()", "as_b()", "as_i()",
+    "colformat_double()", "colformat_int()", "colformat_char()", "colformat_date()",
+    "set_formatter()", "set_formatter_type()",
+    "autofit()", "fit_to_width()", "width()", "height()", "hrule()",
+    "theme_vanilla()", "theme_booktabs()", "theme_apa()", "theme_zebra()", "theme_box()", "theme_borderless()",
+    "summarizor()", "tabulator()", "compact_summary()", "continuous_summary()",
+    "save_as_docx()", "save_as_html()", "save_as_pptx()", "save_as_rtf()", "save_as_image()",
+    "set_flextable_defaults()", "get_flextable_defaults()", "init_flextable_defaults()",
+    "set_table_properties()", "minibar()", "lollipop()", "linerange()",
+    "separate_header()", "labelizor()", "proc_freq()"
+  ]
+}

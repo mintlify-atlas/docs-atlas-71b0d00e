@@ -264,3 +264,49 @@ ft
 ```
 
 This is useful when you want to build a header entirely from scratch with `add_header_row()` after clearing the default one.
+
+## Add rows to the body
+
+`add_body_row()` inserts a single row into the **body** where labels can span multiple columns. This is useful for adding summary rows or dividers inside the table body.
+
+```r
+ft_1 <- flextable(head(mtcars))
+ft_1 <- add_body_row(ft_1,
+  values = c("Mean", "SD"),
+  colwidths = c(5, 6),
+  top = FALSE
+)
+ft_1 <- theme_box(ft_1)
+ft_1
+```
+
+`add_body()` inserts a row using named column values, similar to `add_header()`:
+
+```r
+new_row <- as.list(colMeans(head(mtcars)))
+ft <- flextable(head(mtcars))
+ft <- add_body(ft, values = new_row, top = FALSE)
+ft
+```
+
+<Note>
+When `values` is a character vector, the column data types in the body are coerced to `character`. Use a named list to preserve column types, which allows conditional formatting to continue working correctly.
+</Note>
+
+## Delete rows and columns
+
+`delete_rows()` removes one or more rows from a table part:
+
+```r
+ft <- flextable(head(iris))
+ft <- delete_rows(ft, i = 1:2, part = "body")
+ft
+```
+
+`delete_columns()` removes one or more columns entirely. Any previously defined spans involving those columns are cleared:
+
+```r
+ft <- flextable(head(iris))
+ft <- delete_columns(ft, j = "Species")
+ft
+```

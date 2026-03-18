@@ -193,3 +193,74 @@ Table width and height are determined by flextable cell dimensions, not by the p
 - PowerPoint only supports fixed table layout. Use `autofit()` to adjust column widths.
 - Images inside table cells are not supported in PowerPoint.
 - Row and column spans rendered from flextable may differ from native PowerPoint span behavior.
+
+## Pagination and page breaks
+
+`paginate()` controls how table rows behave across page breaks in Word and RTF output. It applies the "keep with next" attribute to groups of rows so they stay together on a page.
+
+```r
+library(flextable)
+
+# Keep all rows together (small tables)
+ft <- paginate(ft, init = TRUE, hdr_ftr = TRUE)
+
+# Keep header with first body row only (large tables)
+ft <- paginate(ft, init = FALSE, hdr_ftr = TRUE)
+
+# Keep rows within groups together
+ft <- paginate(ft, group = "cut", group_def = "rle")
+```
+
+The `group_def` argument controls how groups are identified:
+
+| Value | Algorithm |
+|---|---|
+| `"rle"` | Groups consecutive equal values in `group` column (use with `tabulator()`) |
+| `"nonempty"` | A new group starts wherever `group` column is non-empty |
+| `"starts"` | `group` is an integer vector of row indices that begin new groups |
+
+<Note>
+`paginate()` only applies to Word and RTF output. It has no effect on HTML or PDF.
+</Note>
+
+## Clinical shift tables
+
+`shift_table()` prepares a laboratory test results dataset in CDISC format for display as a shift table with `tabulator()`. A shift table shows how subjects move between reference range categories (Low/Normal/High) from baseline to follow-up visits.
+
+```r
+library(flextable)
+
+SHIFT_TABLE <- shift_table(
+  x = labdata,
+  cn_visit = "VISIT",
+  cn_grade = "LBNRIND",
+  cn_usubjid = "USUBJID",
+  cn_lab_cat = "LBTEST",
+  cn_treatment = "TREAT",
+  cn_is_baseline = "LBBLFL",
+  baseline_identifier = "Y",
+  grade_levels = c("LOW", "NORMAL", "HIGH")
+)
+
+# Post-process with the attribute helpers
+visit_as_factor <- attr(SHIFT_TABLE, "FUN_VISIT")
+range_as_factor <- attr(SHIFT_TABLE, "FUN_GRADE")
+SHIFT_TABLE$VISIT   <- visit_as_factor(SHIFT_TABLE$VISIT)
+SHIFT_TABLE$LBNRIND <- range_as_factor(SHIFT_TABLE$LBNRIND)
+
+# Use with tabulator()
+tab <- tabulator(
+  x = SHIFT_TABLE,
+  hidden_data = attr(SHIFT_TABLE, "VISIT_N"),
+  rows = c("LBTEST", "VISIT", "BASELINE"),
+  columns = c("TREAT", "LBNRIND"),
+  `n` = as_paragraph(N)
+)
+ft <- as_flextable(tab,
+  separate_with = "VISIT",
+  label_rows = c(LBTEST = "Lab Test", VISIT = "Visit", BASELINE = "Baseline Range")
+)
+ft
+```
+
+`shift_table()` returns the processed data frame with three attributes: `VISIT_N` (visit counts for use as `hidden_data`), `FUN_VISIT` (factor conversion for visit column), and `FUN_GRADE` (factor conversion adding MISSING/SUM levels).

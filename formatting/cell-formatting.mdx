@@ -183,6 +183,89 @@ ft
 
 Use `style()` when you need to set several property types at once on the same selection. Use the individual convenience functions (`bold()`, `bg()`, `padding()`, etc.) when you only need to change one aspect.
 
+## Blank column separator styling
+
+`empty_blanks()` makes blank columns (columns added via `col_keys` that are not in the source data) transparent — no borders, transparent background, empty content, and a narrow default width:
+
+```r
+typology <- data.frame(
+  col_keys = c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "Species"),
+  what    = c("Sepal",  "Sepal",  "Petal",  "Petal",  " "),
+  measure = c("Length", "Width", "Length", "Width", "Species"),
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable(head(iris), col_keys = c(
+  "Species",
+  "break1", "Sepal.Length", "Sepal.Width",
+  "break2", "Petal.Length", "Petal.Width"
+))
+ft <- set_header_df(ft, mapping = typology, key = "col_keys")
+ft <- merge_h(ft, part = "header")
+ft <- theme_vanilla(ft)
+ft <- empty_blanks(ft)
+ft <- width(ft, j = c(2, 5), width = .1)
+ft
+```
+
+## Hide cell content
+
+`void()` replaces the visible text in selected columns with an empty string. The column remains in the layout and keeps its header, but its body values are no longer displayed. This is useful when you have already encoded the values in a neighbouring column via `compose()`:
+
+```r
+ft <- flextable(head(mtcars))
+ft <- void(ft, ~ vs + am + gear + carb)
+ft
+```
+
+<Note>
+`void()` does not modify the underlying data. To remove a column entirely from the table, use the `col_keys` argument of `flextable()`.
+</Note>
+
+## Tab stop settings
+
+`tab_settings()` defines tabulation mark positions in table cell paragraphs. This is especially useful in clinical tables where decimals need to align:
+
+```r
+library(officer)
+library(flextable)
+
+z <- data.frame(
+  Statistic = c("Median (Q1 ; Q3)", "Min ; Max"),
+  Value = c(
+    "\t999.99\t(99.9 ; 99.9)",
+    "\t9.99\t(9999.9 ; 99.9)"
+  )
+)
+
+ts <- fp_tabs(
+  fp_tab(pos = 0.4, style = "decimal"),
+  fp_tab(pos = 1.4, style = "decimal")
+)
+
+ft <- flextable(z)
+ft <- tab_settings(ft, j = 2, value = ts)
+ft <- width(ft, width = c(1.5, 2))
+save_as_docx(ft, path = tempfile(fileext = ".docx"))
+```
+
+## Keeping rows together across pages
+
+`keep_with_next()` sets the Word "Keep with next" attribute on body rows so they do not break across pages. Apply it to all rows in a group except the last:
+
+```r
+dat <- iris[c(1:25, 51:75, 101:125), ]
+ft <- qflextable(dat)
+ft <- keep_with_next(
+  x = ft,
+  i = c(1:24, 26:49, 51:74),
+  value = TRUE
+)
+save_as_docx(ft, path = tempfile(fileext = ".docx"))
+```
+
+For smarter automatic group-based pagination, use `paginate()` — see [Export & Output: Word & PowerPoint](/output/word-powerpoint).
+
 ## Quick reference
 
 | Function | Key argument | Default `part` |
@@ -193,3 +276,7 @@ Use `style()` when you need to set several property types at once on the same se
 | `padding(x, i, j, padding, ...)` | `padding` — shortcut for all four sides | `"body"` |
 | `line_spacing(x, i, j, space, part)` | `space = 1` | `"body"` |
 | `style(x, i, j, pr_t, pr_p, pr_c, part)` | `pr_t`, `pr_p`, `pr_c` | `"body"` |
+| `empty_blanks(x, width, unit, part)` | clears blank separator columns | `"all"` |
+| `void(x, j, part)` | hides cell content without removing column | `"body"` |
+| `keep_with_next(x, i, value, part)` | Word "keep with next" on rows | `"body"` |
+| `tab_settings(x, i, j, value, part)` | sets tab stop positions | `"body"` |

@@ -1,0 +1,266 @@
+---
+title: "Headers and footers"
+description: "Add, modify, and remove header and footer rows in a flextable, including multi-level spanning headers."
+---
+
+A flextable has three parts: `header`, `body`, and `footer`. Each part holds one or more rows. The functions on this page add, rename, or remove rows in the header and footer.
+
+## Rename column labels
+
+`set_header_labels()` changes the display text in the bottom header row. It does not add a new row — it replaces existing labels.
+
+```r
+library(flextable)
+
+ft <- flextable(head(iris))
+ft <- set_header_labels(ft,
+  Sepal.Length = "Sepal length",
+  Sepal.Width  = "Sepal width",
+  Petal.Length = "Petal length",
+  Petal.Width  = "Petal width"
+)
+ft
+```
+
+You can also pass a named list via the `values` argument, or an unnamed character vector the same length as the number of columns:
+
+```r
+ft <- set_header_labels(
+  x = ft,
+  values = c(
+    "Sepal length", "Sepal width",
+    "Petal length", "Petal width", "Species"
+  )
+)
+```
+
+## Add a spanning header row
+
+`add_header_row()` inserts a single new row into the header. The `colwidths` argument controls how many columns each label spans. All `colwidths` values must sum to the total number of columns in the table.
+
+```r
+ft <- flextable(head(airquality))
+ft <- add_header_row(
+  ft,
+  values     = c("Measure", "Time"),
+  colwidths  = c(4, 2),
+  top        = TRUE
+)
+ft <- theme_box(ft)
+ft
+```
+
+Call `add_header_row()` multiple times to build a multi-level header. Each call adds exactly one row:
+
+```r
+ft <- flextable(head(mtcars))
+# add a row at the bottom of the header
+ft <- add_header_row(ft, values = c("Group A", "Group B"), colwidths = c(5, 6), top = FALSE)
+# add another row at the top
+ft <- add_header_row(ft, values = c("Part I", "Part II"),  colwidths = c(3, 8), top = TRUE)
+ft
+```
+
+<Tip>
+Spanning labels in `add_header_row()` are implemented as merged cells. You do not need to call `merge_h()` on header rows added this way.
+</Tip>
+
+### Formatted spanning labels
+
+Pass a call to `as_paragraph()` as the `values` argument to use rich formatted text in spanning header labels:
+
+```r
+ft01 <- fp_text_default(color = "red")
+ft02 <- fp_text_default(color = "orange")
+
+pars <- as_paragraph(
+  as_chunk(c("(1)", "(2)"), props = ft02), " ",
+  as_chunk(c("My tailor is rich", "My baker is rich"), props = ft01)
+)
+
+ft <- flextable(head(mtcars))
+ft <- add_header_row(ft, values = pars, colwidths = c(5, 6), top = TRUE)
+ft
+```
+
+## Add full-width header lines
+
+`add_header_lines()` adds one or more rows where the label spans all columns. This is useful for table titles or sub-titles placed above the column headers.
+
+```r
+ft <- flextable(head(iris))
+ft <- add_header_lines(ft, values = "Summary of iris measurements")
+ft <- add_header_lines(ft, values = c("Source: Fisher (1936)", "n = 6"))
+ft <- autofit(ft)
+ft
+```
+
+Set `top = FALSE` to append lines below the existing header rows instead of prepending above them.
+
+## Add header rows one column at a time
+
+`add_header()` inserts a new row where you supply one value per column using named arguments. Columns you do not name display as empty.
+
+```r
+fun <- function(x) paste0(c("min: ", "max: "), formatC(range(x)))
+
+new_row <- list(
+  Sepal.Length = fun(iris$Sepal.Length),
+  Sepal.Width  = fun(iris$Sepal.Width),
+  Petal.Width  = fun(iris$Petal.Width),
+  Petal.Length = fun(iris$Petal.Length)
+)
+
+ft <- flextable(data = head(iris))
+ft <- add_header(ft, values = new_row, top = FALSE)
+ft <- theme_booktabs(ft, bold_header = TRUE)
+ft <- align(ft, align = "center", part = "all")
+ft
+```
+
+<Note>
+When `add_header()` inserts repeated values across rows, combine it with `merge_h()` and `merge_v()` to collapse identical adjacent cells.
+</Note>
+
+## Set the entire header from a data frame
+
+`set_header_df()` replaces the entire header structure using a mapping data frame. This is convenient for complex multi-row headers defined outside the table:
+
+```r
+typology <- data.frame(
+  col_keys = c(
+    "Sepal.Length", "Sepal.Width",
+    "Petal.Length", "Petal.Width", "Species"
+  ),
+  what    = c("Sepal",  "Sepal",  "Petal",  "Petal",  "Species"),
+  measure = c("Length", "Width", "Length", "Width", "Species"),
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable(head(iris))
+ft <- set_header_df(ft, mapping = typology, key = "col_keys")
+ft <- merge_h(ft, part = "header")
+ft <- merge_v(ft, j = "Species", part = "header")
+ft <- theme_vanilla(ft)
+ft <- fix_border_issues(ft)
+ft
+```
+
+The `key` column is used to join the mapping to the flextable columns. All other columns in the data frame become header rows, ordered left to right as top to bottom.
+
+## Split compound column names automatically
+
+`separate_header()` splits column names that contain a separator (by default `_` or `.`) into multiple header rows automatically:
+
+```r
+x <- data.frame(
+  Species          = as.factor(c("setosa", "versicolor", "virginica")),
+  Sepal.Length_mean = c(5.006, 5.936, 6.588),
+  Sepal.Length_sd   = c(0.35249, 0.51617, 0.63588),
+  Sepal.Width_mean  = c(3.428, 2.77, 2.974),
+  Sepal.Width_sd    = c(0.37906, 0.3138, 0.3225),
+  Petal.Length_mean = c(1.462, 4.26, 5.552),
+  Petal.Length_sd   = c(0.17366, 0.46991, 0.55189),
+  Petal.Width_mean  = c(0.246, 1.326, 2.026),
+  Petal.Width_sd    = c(0.10539, 0.19775, 0.27465)
+)
+
+ft <- flextable(x)
+ft <- colformat_double(ft, digits = 2)
+ft <- theme_box(ft)
+ft <- separate_header(
+  x    = ft,
+  opts = c("span-top", "bottom-vspan")
+)
+ft
+```
+
+The `opts` argument accepts one or more of:
+
+| Option | Effect |
+|---|---|
+| `"span-top"` | Merges empty upper cells with the first non-empty cell above, column by column |
+| `"center-hspan"` | Centers text in horizontally spanned cells |
+| `"bottom-vspan"` | Bottom-aligns cells that were vertically spanned by `"span-top"` |
+| `"default-theme"` | Applies the theme set in `set_flextable_defaults(theme_fun = ...)` to the new header |
+
+<Warning>
+Call `separate_header()` before any other header row additions. It will error if the flextable already has more than one header row.
+</Warning>
+
+## Footer rows
+
+All `add_header_*` functions have direct footer equivalents. The default for `top` in footer functions is `FALSE` (append below).
+
+### Spanning footer row
+
+```r
+ft <- flextable(head(airquality))
+ft <- add_footer_row(
+  ft,
+  values    = c("Measure", "Time"),
+  colwidths = c(4, 2),
+  top       = TRUE
+)
+ft <- theme_box(ft)
+ft
+```
+
+### Full-width footer lines
+
+`add_footer_lines()` is the most common way to add footnotes and source notes:
+
+```r
+ft <- flextable(head(iris))
+ft <- add_footer_lines(ft, values = c(
+  "Source: Fisher (1936)",
+  "Note: first 6 rows only"
+))
+ft
+```
+
+### Footer rows one column at a time
+
+```r
+new_row <- as.list(colMeans(iris[, -5]))
+new_row$Species <- "Means"
+
+ft <- flextable(data = head(iris))
+ft <- add_footer(ft, values = new_row)
+ft <- align(ft, part = "footer", align = "right", j = 1:4)
+ft
+```
+
+### Set the entire footer from a data frame
+
+`set_footer_df()` works like `set_header_df()` but targets the footer part:
+
+```r
+typology <- data.frame(
+  col_keys = c(
+    "Sepal.Length", "Sepal.Width",
+    "Petal.Length", "Petal.Width", "Species"
+  ),
+  unit = c("(cm)", "(cm)", "(cm)", "(cm)", ""),
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable(head(iris))
+ft <- set_footer_df(ft, mapping = typology, key = "col_keys")
+ft <- italic(ft, italic = TRUE, part = "footer")
+ft <- theme_booktabs(ft)
+ft <- fix_border_issues(ft)
+ft
+```
+
+## Remove a part entirely
+
+`delete_part()` removes all rows from `header`, `footer`, or `body`:
+
+```r
+ft <- flextable(head(iris))
+ft <- delete_part(x = ft, part = "header")
+ft
+```
+
+This is useful when you want to build a header entirely from scratch with `add_header_row()` after clearing the default one.

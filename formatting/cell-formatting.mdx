@@ -1,0 +1,195 @@
+---
+title: "Cell formatting"
+description: "Control cell background color, vertical alignment, text rotation, padding, line spacing, and combined formatting with style()."
+---
+
+Cell-level formatting controls the visual properties of the container around the text: its background, how content is aligned vertically inside it, whether the text is rotated, and the whitespace surrounding the content.
+
+## Background color
+
+`bg()` sets the cell background color:
+
+```r
+library(flextable)
+
+ft <- flextable(head(mtcars))
+ft <- bg(ft, bg = "wheat", part = "header")
+ft <- bg(ft, i = ~ qsec < 18, bg = "#EFEFEF", part = "body")
+ft <- bg(ft, j = "drat", bg = "#606060", part = "all")
+ft <- color(ft, j = "drat", color = "white", part = "all")
+ft
+```
+
+<Note>
+Word does not support transparent backgrounds on table cells or paragraph shading. Use an explicit color instead of `"transparent"` when targeting Word output.
+</Note>
+
+### Gradient coloring with a function
+
+When `bg` is a function it is called once per source column and must return a character vector of colors:
+
+```r
+if (require("scales")) {
+  colourer <- scales::col_numeric(
+    palette = c("wheat", "red"),
+    domain = c(0, 7)
+  )
+
+  ft <- flextable(head(iris))
+  ft <- bg(
+    ft,
+    j = c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"),
+    bg = colourer,
+    part = "body"
+  )
+  ft
+}
+```
+
+When `j` is colored by values from a different (possibly hidden) column, pass that column name to the `source` argument.
+
+## Vertical alignment
+
+`valign()` controls where text sits inside the cell vertically:
+
+```r
+ft <- flextable(iris[c(1:3, 51:53, 101:103), ])
+ft <- theme_box(ft)
+ft <- merge_v(ft, j = 5)                        # merge Species column
+ft <- valign(ft, j = 5, valign = "top", part = "all")
+ft
+```
+
+Accepted values: `"top"`, `"center"` (default), `"bottom"`.
+
+## Text rotation
+
+`rotate()` changes the text direction. This is useful for headers with long labels:
+
+```r
+ft <- flextable(head(iris))
+
+# Rotate columns 1–4 bottom-up (tbrl = top-bottom, right-left = 90°)
+ft <- rotate(ft, j = 1:4, align = "bottom", rotation = "tbrl", part = "header")
+
+# Rotate column 5 top-down (btlr = bottom-top, left-right = 270°)
+ft <- rotate(ft, j = 5, align = "bottom", rotation = "btlr", part = "header")
+
+# Word and PowerPoint require explicit heights with rotated headers
+ft <- height(ft, height = 1.2, part = "header")
+ft <- hrule(ft, i = 1, rule = "exact", part = "header")
+ft
+```
+
+<Warning>
+Word and PowerPoint do not calculate automatic row height for rotated cells. Set the row height explicitly with `height()` and set the rule to `"exact"` with `hrule()`, otherwise the text will be clipped.
+</Warning>
+
+The three rotation values:
+
+| Value | Description | Effective angle |
+|---|---|---|
+| `"lrtb"` | Left-to-right, top-to-bottom (default) | 0° |
+| `"tbrl"` | Top-to-bottom, right-to-left | 90° clockwise |
+| `"btlr"` | Bottom-to-top, left-to-right | 270° clockwise |
+
+<Note>
+flextable only rotates by right angles. Arbitrary angles are not supported, ensuring consistent rendering across HTML, PDF, Word, and PowerPoint.
+</Note>
+
+When `autofit()` is used, rotation is ignored. Use `dim_pretty()` and `width()` instead of `autofit()` when working with rotated headers.
+
+## Padding
+
+`padding()` sets whitespace inside the cell, in points. Use the shortcut `padding` to set all four sides at once, or set sides individually:
+
+```r
+ft <- flextable(head(iris))
+ft <- theme_vader(ft)
+
+# Set all sides to 4 pts across all parts
+ft <- padding(ft, padding.top = 4, part = "all")
+
+# Extra right padding in column 1 (body only)
+ft <- padding(ft, j = 1, padding.right = 40)
+
+# Extra top padding for row 3
+ft <- padding(ft, i = 3, padding.top = 40)
+
+# Adjust header spacing
+ft <- padding(ft, padding.top = 10, part = "header")
+ft <- padding(ft, padding.bottom = 10, part = "header")
+ft <- autofit(ft)
+ft
+```
+
+<Note>
+In PDF output, only `padding.left` and `padding.right` are respected. `padding.top` and `padding.bottom` are ignored due to LaTeX limitations. Use `set_table_properties(opts_pdf = list(tabcolsep = 1))` for global horizontal spacing in PDF.
+</Note>
+
+## Line spacing
+
+`line_spacing()` sets the space between lines of text inside a cell. `1` is single spacing, `2` is double:
+
+```r
+ft <- flextable(head(mtcars)[, 3:6])
+ft <- line_spacing(ft, space = 1.6, part = "all")
+ft <- set_table_properties(ft, layout = "autofit")
+ft
+```
+
+## Using `fp_cell()` for full cell control
+
+The `style()` function accepts an `officer::fp_cell()` object that bundles all cell properties. Use it when you need to set several cell properties in one call:
+
+```r
+library(officer)
+
+cell_style <- fp_cell(
+  border = fp_border(color = "wheat"),
+  background.color = "#f5f5f5",
+  vertical.align = "top"
+)
+
+ft <- flextable(head(mtcars))
+ft <- style(ft, pr_c = cell_style, part = "all")
+ft
+```
+
+## Combining multiple properties with `style()`
+
+`style()` sets text (`pr_t`), paragraph (`pr_p`), and cell (`pr_c`) properties in a single call, targeting the same `i`/`j`/`part` selection:
+
+```r
+library(officer)
+
+def_cell <- fp_cell(border = fp_border(color = "wheat"))
+def_par  <- fp_par(text.align = "center")
+
+ft <- flextable(head(mtcars))
+
+# Apply cell and paragraph styles to all parts
+ft <- style(ft, pr_c = def_cell, pr_p = def_par, part = "all")
+
+# Apply text style conditionally to body rows
+ft <- style(
+  ft,
+  i = ~ drat > 3.5,
+  j = ~ vs + am + gear + carb,
+  pr_t = fp_text(color = "red", italic = TRUE)
+)
+ft
+```
+
+Use `style()` when you need to set several property types at once on the same selection. Use the individual convenience functions (`bold()`, `bg()`, `padding()`, etc.) when you only need to change one aspect.
+
+## Quick reference
+
+| Function | Key argument | Default `part` |
+|---|---|---|
+| `bg(x, i, j, bg, part)` | `bg` — color string or function | `"body"` |
+| `valign(x, i, j, valign, part)` | `valign = "center"` | `"body"` |
+| `rotate(x, i, j, rotation, align, part)` | `rotation` — `"lrtb"`, `"tbrl"`, or `"btlr"` | `"body"` |
+| `padding(x, i, j, padding, ...)` | `padding` — shortcut for all four sides | `"body"` |
+| `line_spacing(x, i, j, space, part)` | `space = 1` | `"body"` |
+| `style(x, i, j, pr_t, pr_p, pr_c, part)` | `pr_t`, `pr_p`, `pr_c` | `"body"` |

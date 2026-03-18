@@ -1,0 +1,128 @@
+---
+title: width() and height()
+description: Set column widths and row heights in a flextable.
+---
+
+Use `width()` to set column widths and `height()` / `height_all()` to set row heights. Heights only take effect when `hrule()` is set to `"atleast"` or `"exact"`.
+
+---
+
+## `width()`
+
+Sets the width of one or more columns.
+
+```r
+width(x, j = NULL, width, unit = "in")
+```
+
+<Note>
+  `width()` has no effect when `set_table_properties(layout = "autofit")` is active. In HTML output, column widths are not applied.
+</Note>
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="j" type="integer | character">
+  Column selector. `NULL` applies the width to all columns.
+</ParamField>
+
+<ParamField path="width" type="number" required>
+  Column width. When `j` selects multiple columns, you can supply a single value (applied to all) or a vector of the same length as the number of selected columns.
+</ParamField>
+
+<ParamField path="unit" type="string" default='"in"'>
+  Unit for the width value. One of `"in"` (inches), `"cm"`, or `"mm"`.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(iris))
+ft <- width(ft, width = 1.5)
+ft
+```
+
+---
+
+## `height()`
+
+Sets the height of selected rows.
+
+```r
+height(x, i = NULL, height, part = "body", unit = "in")
+```
+
+<Note>
+  `height()` has no effect when `hrule()` is set to `"auto"` (the default), except in PowerPoint, which does not support automatic row height.
+</Note>
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. `NULL` applies the height to all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="height" type="number" required>
+  Row height. Accepts a single value applied to all selected rows, or a vector of the same length as the number of selected rows.
+</ParamField>
+
+<ParamField path="part" type="string" default='"body"'>
+  Which part to target: `"body"`, `"header"`, or `"footer"`. `"all"` is not accepted.
+</ParamField>
+
+<ParamField path="unit" type="string" default='"in"'>
+  Unit for the height value. One of `"in"` (inches), `"cm"`, or `"mm"`.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(iris))
+ft <- height(ft, height = .5)
+ft <- hrule(ft, rule = "exact")
+ft
+```
+
+---
+
+## `height_all()`
+
+Sets the same height for every row in a selected part. A convenience wrapper around `height()`.
+
+```r
+height_all(x, height, part = "all", unit = "in")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="height" type="number" required>
+  A single positive numeric value to apply to all rows.
+</ParamField>
+
+<ParamField path="part" type="string" default='"all"'>
+  Which part to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+<ParamField path="unit" type="string" default='"in"'>
+  Unit for the height value. One of `"in"` (inches), `"cm"`, or `"mm"`.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(iris))
+ft <- height_all(ft, height = 1)
+ft <- hrule(ft, rule = "exact")
+ft
+```
+
+## See also
+
+- [`autofit()`](/reference/autofit) — automatically size columns and rows to fit content
+- [`hrule()`](/reference/autofit) — control how row heights are interpreted
+- [`set_table_properties()`](/reference/set-table-properties) — set layout mode

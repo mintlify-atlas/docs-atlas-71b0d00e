@@ -1,0 +1,222 @@
+---
+title: "Selectors"
+description: "How to use the i, j, and part arguments to target specific rows, columns, and parts of a flextable."
+---
+
+Selectors are the mechanism flextable uses to target specific cells when applying formatting, styling, or content operations. Nearly every formatting function — `bold()`, `color()`, `bg()`, `padding()`, `align()`, `hline()`, and more — accepts three selector arguments: `i`, `j`, and `part`.
+
+When all three default to `NULL` (rows) or their default string, the operation applies to the entire part.
+
+## The `part` argument
+
+The `part` argument determines which section of the table is targeted.
+
+```r
+part = "body"    # data rows (default for most functions)
+part = "header"  # header rows
+part = "footer"  # footer rows
+part = "all"     # all three parts
+```
+
+```r
+ft <- flextable(head(mtcars)) |>
+  bold(part = "header") |>        # bold every cell in the header
+  bg(bg = "#FFFDE7", part = "all") # yellow tint across header, body, footer
+```
+
+<Note>
+When `part = "all"`, the operation is applied to each part independently. Formula row selectors (`i = ~ condition`) cannot be used with `part = "all"`, `"header"`, or `"footer"` — these parts store only character representations of values, so numeric conditions cannot be evaluated on them.
+</Note>
+
+## The `i` argument — row selector
+
+The `i` argument selects which rows within a part to target. When `i = NULL` (the default), all rows in the part are selected.
+
+<Tabs>
+  <Tab title="Formula (body only)">
+    Use a one-sided formula to filter rows by a condition evaluated against the body dataset. The expression uses column names from the original `data.frame`.
+
+    ```r
+    # Highlight rows where mpg is less than 22
+    ft <- flextable(head(mtcars, 10)) |>
+      highlight(i = ~ mpg < 22, j = "mpg", color = "#ffe842")
+    ```
+
+    ```r
+    # Color rows where a column equals a specific value
+    ft <- flextable(head(airquality, 20)) |>
+      color(i = ~ Temp > 80, color = "red")
+    ```
+
+    Formula selectors evaluate conditions using the actual data types from the dataset (numeric, logical, etc.). They only work with `part = "body"`.
+  </Tab>
+
+  <Tab title="Integer index">
+    Pass an integer vector to select rows by position.
+
+    ```r
+    # Bold only the first and third body rows
+    ft <- flextable(head(mtcars)) |>
+      bold(i = c(1, 3))
+
+    # Target the second header row
+    ft <- bold(ft, i = 2, part = "header")
+    ```
+
+    Integer selection works with all parts, including header and footer.
+  </Tab>
+
+  <Tab title="Logical vector">
+    Pass a logical vector of the same length as the number of rows in the part.
+
+    ```r
+    data <- head(mtcars, 6)
+    ft <- flextable(data) |>
+      bg(i = c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE), bg = "#f0f0f0")
+    ```
+  </Tab>
+</Tabs>
+
+### Targeting the last row with `nrow_part()`
+
+`nrow_part()` returns the number of rows in a given part. It is the recommended way to programmatically select the last row:
+
+```r
+ft <- flextable(iris[48:52, ])
+
+# Bold the last body row
+ft <- bold(ft, i = nrow_part(ft, part = "body"), part = "body")
+
+# Add a footnote to the last row
+ft <- footnote(
+  ft,
+  i = nrow_part(ft, part = "body"), j = 1:4,
+  value = as_paragraph("Calculated mean")
+)
+```
+
+## The `j` argument — column selector
+
+The `j` argument selects which columns to target. When `j = NULL` (the default), all columns are selected.
+
+<Tabs>
+  <Tab title="Character names">
+    The recommended approach — explicit column names are readable and resilient to column reordering:
+
+    ```r
+    # Color a single column
+    ft <- flextable(head(mtcars)) |>
+      color(j = "mpg", color = "blue")
+
+    # Target multiple columns
+    ft <- flextable(head(mtcars)) |>
+      bold(j = c("mpg", "cyl", "hp"))
+    ```
+  </Tab>
+
+  <Tab title="Formula">
+    A formula lists column names with `+`. This is useful for selecting or excluding multiple columns concisely:
+
+    ```r
+    # Select specific columns
+    ft <- flextable(head(mtcars)) |>
+      bold(j = ~ vs + am + gear)
+
+    # Exclude a column using . - colname
+    ft <- flextable(head(mtcars)) |>
+      bg(j = ~ . - mpg, bg = "#f5f5f5")
+    ```
+
+    The formula is parsed as a model terms expression. Column names are extracted from the term labels.
+  </Tab>
+
+  <Tab title="Integer index">
+    Select columns by position:
+
+    ```r
+    # First and third columns
+    ft <- flextable(head(mtcars)) |>
+      bold(j = c(1, 3))
+    ```
+
+    Negative integers exclude columns:
+
+    ```r
+    # All columns except the first
+    ft <- flextable(head(mtcars)) |>
+      bold(j = -1)
+    ```
+  </Tab>
+
+  <Tab title="Logical vector">
+    Pass a logical vector of the same length as `ncol_keys(ft)`:
+
+    ```r
+    ncols <- ncol_keys(ft)
+    # Apply alternating background
+    ft <- bg(ft, j = rep(c(TRUE, FALSE), length.out = ncols), bg = "#f0f0f0")
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+Prefer character vectors (`j = c("col1", "col2")`) over integer positions. Character names are unambiguous when columns are reordered or when sharing code with others.
+</Tip>
+
+## Combining `i`, `j`, and `part`
+
+Selectors can be combined freely. The operation applies to the intersection of selected rows and selected columns in the targeted part:
+
+```r
+ft <- flextable(head(mtcars, 10)) |>
+  # Red text in body rows where mpg < 22, only in the mpg column
+  color(i = ~ mpg < 22, j = "mpg", color = "red", part = "body") |>
+  # Bold all header cells
+  bold(part = "header") |>
+  # Grey background for the last body row, all columns
+  bg(
+    i = nrow_part(ft, "body"),
+    bg = "#eeeeee",
+    part = "body"
+  )
+```
+
+## Selectors and merged cells
+
+Selectors work with merged cells — they target the individual cells by row and column index, not by the visual span. When you format a merged cell, apply formatting to the top-left cell of the merged region (the anchor cell); other cells in the span are hidden and their formatting has no visual effect.
+
+```r
+ft <- flextable(head(mtcars)) |>
+  merge_h(i = 1, part = "body") |>   # merge all cells in row 1
+  bold(i = 1, j = 1, part = "body")  # bold the anchor (top-left) cell
+```
+
+## Best practices
+
+<CardGroup cols={2}>
+  <Card title="Rows" icon="rows">
+    - Use `i = ~ condition` for conditional body formatting.
+    - Use `nrow_part(ft, "body")` to target the last row without hard-coding a number.
+    - Use integers or logical vectors to target header and footer rows.
+  </Card>
+  <Card title="Columns" icon="columns">
+    - Prefer character names (`j = c("col1", "col2")`) for maintainability.
+    - Use formula syntax (`j = ~ col1 + col2`) when excluding columns is cleaner.
+    - Avoid integer positions when column order may change.
+  </Card>
+</CardGroup>
+
+## Quick reference
+
+| Selector | Type | Example | Notes |
+|---|---|---|---|
+| `i` | Formula | `i = ~ mpg < 22` | Body only; uses original data types |
+| `i` | Integer | `i = c(1, 3)` | Any part; positional |
+| `i` | Logical | `i = c(TRUE, FALSE, ...)` | Length must match part row count |
+| `i` | NULL | `i = NULL` | All rows (default) |
+| `j` | Character | `j = c("mpg", "cyl")` | Recommended; column names |
+| `j` | Formula | `j = ~ mpg + cyl` | Column list or exclusion |
+| `j` | Integer | `j = 1:3` | Positional; negative excludes |
+| `j` | Logical | `j = c(TRUE, FALSE, ...)` | Length must match `ncol_keys(ft)` |
+| `j` | NULL | `j = NULL` | All columns (default) |
+| `part` | String | `part = "body"` | `"body"`, `"header"`, `"footer"`, `"all"` |

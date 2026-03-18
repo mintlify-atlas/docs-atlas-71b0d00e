@@ -1,0 +1,186 @@
+---
+title: R Markdown and Quarto
+description: Use flextable in R Markdown and Quarto documents with automatic format detection, captions, and chunk options.
+---
+
+flextable integrates with knitr through `knit_print.flextable()`, which is called automatically when a flextable object appears in a code chunk. You do not need to call it directly.
+
+## How rendering works
+
+When knitr processes a chunk containing a flextable, it detects the output format and generates the appropriate output:
+
+| Output format | Rendering method |
+|---|---|
+| HTML | Native HTML table with scoped CSS |
+| Word (docx) | Office Open XML (`wml`) |
+| PDF | LaTeX table code |
+| PowerPoint (pptx) | Presentation ML (`pml`) |
+| Other (GitHub, Beamer, etc.) | PNG image via `save_as_image()` |
+
+No special setup is required. Place a flextable object in a chunk and it renders:
+
+```r
+library(flextable)
+
+ft <- flextable(head(iris))
+ft <- autofit(ft)
+ft
+```
+
+## Adding captions
+
+The recommended way to add a caption is with `set_caption()`:
+
+```r
+ft <- flextable(head(airquality))
+ft <- set_caption(ft, caption = "Daily air quality measurements")
+ft
+```
+
+When `set_caption()` is used, chunk options related to captions are ignored.
+
+In Quarto, use `tbl-cap` and `label` chunk options instead of `set_caption()`:
+
+````md
+```{r}
+#| label: tbl-airquality
+#| tbl-cap: "Daily air quality measurements"
+ft
+```
+````
+
+Cross-references in Quarto use `@tbl-airquality`. In bookdown documents, cross-references use `\@ref(tab:chunk_label)`.
+
+## Chunk options reference
+
+### All formats
+
+| Option | Description | Default |
+|---|---|---|
+| `ft.align` | Table alignment: `'left'`, `'center'`, `'right'` | `'center'` |
+
+### R Markdown captions
+
+These options are only used when `set_caption()` has not been called on the table:
+
+| Option | Description | Default |
+|---|---|---|
+| `tab.cap` | Caption text | `NULL` |
+| `tab.id` | Caption id / bookmark | `NULL` |
+| `tab.topcaption` | Place caption above the table | `TRUE` |
+| `tab.lp` | Caption sequence identifier | `"tab:"` |
+| `tab.cap.style` | Word paragraph style for the caption | `NULL` |
+
+### HTML
+
+| Option | Description | Default |
+|---|---|---|
+| `ft.htmlscroll` | Enable horizontal scrolling | `FALSE` |
+
+### Word
+
+| Option | Description | Default |
+|---|---|---|
+| `ft.split` | Allow rows to break across pages | `TRUE` |
+
+### PDF
+
+| Option | Description | Default |
+|---|---|---|
+| `ft.tabcolsep` | Space between text and cell borders (pt) | `0` |
+| `ft.arraystretch` | Row height multiplier | `1.5` |
+| `ft.latex.float` | Float placement: `'none'`, `'float'`, `'wrap-r'`, `'wrap-l'`, `'wrap-i'`, `'wrap-o'` | `'none'` |
+
+### PowerPoint
+
+| Option | Description | Default |
+|---|---|---|
+| `ft.left` | Left position of table placeholder (inches) | `1` |
+| `ft.top` | Top position of table placeholder (inches) | `2` |
+
+Set defaults for an entire document with `knitr::opts_chunk$set()`:
+
+```r
+knitr::opts_chunk$set(
+  ft.align = "left",
+  ft.tabcolsep = 4
+)
+```
+
+## officedown caption options
+
+When using `officedown::rdocx_document()`, additional caption chunk options become available:
+
+| Option | Description | Default |
+|---|---|---|
+| `tab.cap.pre` | Numbering prefix | `"Table "` |
+| `tab.cap.sep` | Numbering suffix | `": "` |
+| `tab.cap.tnd` | Title number depth | `0` |
+| `tab.cap.fp_text` | Caption prefix formatting | `fp_text_lite(bold=TRUE)` |
+| `tab.cap.tns` | Title / table number separator | `"-"` |
+
+## Tables inside loops
+
+To print flextable objects inside `for` loops or `if` statements, use `flextable_to_rmd()`. Set the chunk option `results = 'asis'`:
+
+````md
+```{r results='asis'}
+for (species in unique(iris$Species)) {
+  sub <- subset(iris, Species == species)
+  ft <- flextable(head(sub))
+  ft <- set_caption(ft, caption = as.character(species))
+  flextable_to_rmd(ft)
+}
+```
+````
+
+## Automatic data frame conversion
+
+`use_df_printer()` replaces the default data frame print method so that any data frame printed in a document is automatically converted to a flextable:
+
+```r
+use_df_printer()
+
+# now data frames render as flextable
+head(iris)
+```
+
+Call `use_model_printer()` to do the same for model objects. These functions are best placed in a setup chunk.
+
+## Quarto setup with `use_flextable_qmd()`
+
+The `flextable-qmd` Lua filter extension allows Quarto markdown syntax inside flextable cells: cross-references, bold, italic, links, math, inline code, and shortcodes. Install it with:
+
+```r
+use_flextable_qmd()
+```
+
+After installing, use `as_qmd()` to mark cell content as Quarto markdown:
+
+```r
+ft <- flextable(data.frame(
+  label = c("See @tbl-summary for details"),
+  value = c(42)
+))
+ft <- compose(
+  ft, j = "label",
+  value = as_paragraph(as_qmd("See @tbl-summary for details"))
+)
+```
+
+## Post-processing hooks
+
+`set_flextable_defaults()` accepts post-processing functions that are applied to every table before rendering. This is useful for applying consistent styling across a document:
+
+```r
+set_flextable_defaults(
+  post_process_html = function(ft) {
+    theme_vanilla(ft)
+  },
+  post_process_docx = function(ft) {
+    theme_booktabs(ft)
+  }
+)
+```
+
+Available hooks: `post_process_all`, `post_process_html`, `post_process_docx`, `post_process_pdf`, `post_process_pptx`.

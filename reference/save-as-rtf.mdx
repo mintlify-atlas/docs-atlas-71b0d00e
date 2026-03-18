@@ -1,0 +1,79 @@
+---
+title: save_as_rtf()
+description: Save one or more flextable objects into an RTF file.
+---
+
+`save_as_rtf()` writes one or more flextable objects to an RTF (Rich Text Format) file.
+
+## Function signature
+
+```r
+save_as_rtf(..., values = NULL, path, pr_section = NULL)
+```
+
+## Parameters
+
+<ParamField path="..." type="flextable" required>
+  One or more `flextable` objects, optionally named. Named objects use the name as a title before the table.
+</ParamField>
+
+<ParamField path="values" type="list">
+  A list of `flextable` objects (optionally named). If supplied, `...` is ignored.
+</ParamField>
+
+<ParamField path="path" type="string" required>
+  Path to the `.rtf` file to create.
+</ParamField>
+
+<ParamField path="pr_section" type="prop_section">
+  An `officer::prop_section` object defining page layout properties such as orientation, page size, margins, and optional document headers and footers.
+</ParamField>
+
+## Return value
+
+A string containing the full path of the generated file.
+
+## Examples
+
+Save a single table:
+
+```r
+library(officer)
+ft <- flextable(head(iris))
+tf <- tempfile(fileext = ".rtf")
+save_as_rtf(ft, path = tf)
+```
+
+Save multiple named tables with a landscape page layout and a custom document header:
+
+```r
+library(officer)
+ft1 <- flextable(head(iris))
+ft2 <- flextable(head(mtcars))
+
+sect_properties <- prop_section(
+  page_size = page_size(orient = "landscape", width = 8.3, height = 11.7),
+  type = "continuous",
+  page_margins = page_mar(),
+  header_default = block_list(
+    fpar(ftext("text for default page header")),
+    qflextable(data.frame(a = 1L))
+  )
+)
+
+tf <- tempfile(fileext = ".rtf")
+save_as_rtf(
+  `iris table`   = ft1,
+  `mtcars table` = ft2,
+  path           = tf,
+  pr_section     = sect_properties
+)
+```
+
+## See also
+
+- [`save_as_docx()`](/reference/save-as-docx)
+- [`save_as_html()`](/reference/save-as-html)
+- [`save_as_pptx()`](/reference/save-as-pptx)
+- [`save_as_image()`](/reference/save-as-image)
+- [`paginate()`](/reference/set-table-properties) — control row pagination

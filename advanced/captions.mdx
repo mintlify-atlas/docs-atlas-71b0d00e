@@ -1,0 +1,218 @@
+---
+title: "Captions and footnotes"
+description: "Add table captions with auto-numbering and formatted text, and attach footnote references to cells using footnote()."
+---
+
+## Captions
+
+`set_caption()` attaches a caption to a flextable. When you use R Markdown or Quarto, settings from `set_caption()` take priority over knitr chunk options.
+
+### Simple string caption
+
+```r
+library(flextable)
+
+ftab <- flextable(head(iris))
+ftab <- set_caption(ftab, "My table caption")
+ftab
+```
+
+A plain string caption carries no inline formatting. To add bold, italic, or color, use `as_paragraph()` instead.
+
+### Formatted caption with `as_paragraph()`
+
+Build the caption from chunks to apply font properties:
+
+```r
+library(flextable)
+library(officer)
+
+ftab <- flextable(head(cars))
+ftab <- set_caption(
+  ftab,
+  as_paragraph(
+    as_chunk("caption", props = fp_text_default(font.family = "Cambria"))
+  ),
+  word_stylename = "Table Caption"
+)
+ftab
+```
+
+The `word_stylename` parameter applies the named Word paragraph style to the caption. Use `officer::styles_info()` to list available style names in your reference document.
+
+<Note>
+Formatted `as_paragraph()` captions are not supported in Quarto. In Quarto, caption content and numbering are managed by the Quarto framework itself.
+</Note>
+
+### Auto-numbered captions
+
+Combine `set_caption()` with `officer::run_autonum()` to produce a caption preceded by an automatic "Table N:" sequence in Word:
+
+```r
+library(flextable)
+library(officer)
+
+autonum <- run_autonum(seq_id = "tab", bkm = "mtcars")
+
+ftab <- flextable(head(mtcars))
+ftab <- set_caption(
+  ftab,
+  caption = "mtcars data",
+  autonum = autonum
+)
+ftab
+```
+
+The `bkm` argument defines the Word bookmark name used for cross-referencing. In HTML and PDF output, the bookmark serves as the element identifier.
+
+### `set_caption()` parameter reference
+
+| Parameter | Default | Description |
+|---|---|---|
+| `caption` | `NULL` | Caption text (string) or formatted paragraph (`as_paragraph()`). |
+| `autonum` | `NULL` | `officer::run_autonum()` object for auto-numbering. |
+| `word_stylename` | `"Table Caption"` | Word paragraph style applied to the caption. |
+| `fp_p` | `fp_par(padding = 3)` | Paragraph formatting (alignment, spacing). Applies to HTML and Word, but not bookdown. |
+| `align_with_table` | `TRUE` | When `TRUE`, caption alignment follows the table's alignment. |
+| `html_classes` | `NULL` | CSS class(es) added to the `<caption>` element in HTML output. |
+| `html_escape` | `TRUE` | Escape HTML entities in the caption string. |
+
+## Captions across output formats
+
+<Tabs>
+  <Tab title="R Markdown (rmarkdown)">
+    In `rmarkdown::word_document()` and `rmarkdown::html_document()`, numbered and cross-referenced captions are not expected by default. Use knitr chunk options or `set_caption()` with a plain string.
+
+    In `rmarkdown::pdf_document()`, numbers are added automatically before the caption text.
+  </Tab>
+  <Tab title="bookdown">
+    bookdown handles cross-referencing. Because the caption must not appear inside an HTML or XML block, formatted `as_paragraph()` captions lose their formatting in Word and HTML output (the limitation does not apply to PDF).
+
+    Use `tab.id` and `tab.cap` chunk options or `set_caption()` with a plain string.
+  </Tab>
+  <Tab title="Quarto">
+    Quarto manages captions and cross-references independently. Use `tbl-cap` and `label` chunk options in Quarto documents. `set_caption()` formatting and auto-numbering are overridden by Quarto.
+
+    Word output in Quarto is a special case — caption injection may vary as Quarto evolves.
+  </Tab>
+  <Tab title="officer (programmatic)">
+    When using `body_add_flextable()` directly, all options set with `set_caption()` are fully respected, including formatted paragraphs, auto-numbering, Word style names, and paragraph properties.
+  </Tab>
+</Tabs>
+
+## Knitr chunk options
+
+You can set captions through chunk options instead of calling `set_caption()`. A typical chunk looks like:
+
+````
+```{r}
+#| tab.id: bookmark_id
+#| tab.cap: caption text
+flextable(head(cars))
+```
+````
+
+Available chunk options:
+
+| Option | Description |
+|---|---|
+| `tab.id` | Caption ID / bookmark name. |
+| `tab.cap` | Caption text. |
+| `tab.cap.style` | Word paragraph style name for the caption. |
+| `tab.topcaption` | `TRUE` to place caption above the table (default). |
+| `tab.lp` | Caption sequence prefix. Default `"tab:"`. |
+| `tab.cap.pre` | Prefix before the number. Default `"Table "`. |
+| `tab.cap.sep` | Separator after the number. Default `": "`. |
+| `tab.cap.tnd` | Title number depth. Default `0`. |
+| `tab.cap.tns` | Separator between title number and table number. Default `"-"`. |
+| `tab.cap.fp_text` | `fp_text_lite()` object for formatting the caption prefix. |
+
+## Footnotes
+
+`footnote()` adds reference symbols to selected cells and places the footnote text in the table footer.
+
+### Basic usage
+
+```r
+ft <- flextable(head(iris))
+ft <- footnote(ft,
+  i = 1, j = 1:3,
+  value = as_paragraph(
+    c(
+      "This is footnote one",
+      "This is footnote two",
+      "This is footnote three"
+    )
+  ),
+  ref_symbols = c("a", "b", "c"),
+  part = "header"
+)
+ft <- valign(ft, valign = "bottom", part = "header")
+ft <- autofit(ft)
+ft
+```
+
+Each element of `ref_symbols` corresponds to one element of the `value` paragraph. The symbol is appended to the matched cell and the footnote text appears as a footer row.
+
+### Parameter reference
+
+| Parameter | Default | Description |
+|---|---|---|
+| `i` | `NULL` | Row selector. |
+| `j` | `NULL` | Column selector. |
+| `value` | required | `as_paragraph()` call with one element per distinct footnote. |
+| `ref_symbols` | `NULL` | Character vector of reference symbols (e.g. `c("a", "b")` or `c("*", "†")`). When `NULL`, no symbol is inserted. |
+| `part` | `"body"` | Which part the selected cells belong to. `"all"` is not allowed. |
+| `inline` | `FALSE` | When `TRUE`, appends the new footnote on the same footer line as the previous one. |
+| `sep` | `"; "` | Separator used between inline footnotes. |
+| `symbol_sep` | `""` | Separator between multiple symbols in the same cell. Use `","` to produce `1,2` instead of `12`. |
+
+### Inline footnotes
+
+When `inline = TRUE`, multiple footnote calls append to the same footer row rather than creating a new row each time:
+
+```r
+ft <- flextable(head(iris))
+ft <- autofit(ft)
+ft <- footnote(ft,
+  i = 1, j = 1:2,
+  value = as_paragraph(c("Footnote one", "Footnote two")),
+  ref_symbols = c("a", "b"),
+  part = "header", inline = TRUE
+)
+ft <- footnote(ft,
+  i = 1, j = 3:4,
+  value = as_paragraph(c("Footnote three", "Footnote four")),
+  ref_symbols = c("c", "d"),
+  part = "header", inline = TRUE
+)
+ft
+```
+
+### Shared symbol across multiple cells
+
+When `i` and `j` select multiple cells but you provide a single symbol, the same symbol and footnote is shared across all of them:
+
+```r
+ft <- flextable(head(iris))
+ft <- autofit(ft)
+ft <- footnote(
+  x = ft, i = 1:3, j = 1:3,
+  ref_symbols = "a",
+  value = as_paragraph("This is footnote one")
+)
+ft
+```
+
+## Footnotes vs footer lines
+
+`footnote()` and `add_footer_lines()` both add content to the footer, but serve different purposes:
+
+| | `footnote()` | `add_footer_lines()` |
+|---|---|---|
+| Adds symbol to cell | Yes | No |
+| Links cell to footnote text | Yes | No |
+| Accepts `as_paragraph()` | Yes | Yes |
+| Suitable for general notes | No | Yes |
+
+Use `footnote()` when you need to mark specific cells with a symbol and associate each mark with an explanatory note. Use `add_footer_lines()` for general notes or source attributions that apply to the whole table.

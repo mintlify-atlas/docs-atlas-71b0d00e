@@ -1,0 +1,215 @@
+---
+title: "Global defaults"
+description: "Set package-wide formatting and behavior defaults that apply to every flextable you create in a session."
+---
+
+flextable reads a global defaults object before rendering any table. Changing these defaults once — typically in a setup chunk — saves you from repeating the same arguments on every table.
+
+## Setting defaults
+
+`set_flextable_defaults()` updates one or more defaults and **returns the previous values** invisibly. This lets you restore the original state with `do.call()`.
+
+```r
+library(flextable)
+
+# Save old values and apply new ones
+old <- set_flextable_defaults(
+  font.color = "#AA8855",
+  border.color = "#8855AA"
+)
+
+ft <- qflextable(head(airquality))
+ft
+
+# Restore previous values
+do.call(set_flextable_defaults, old)
+```
+
+## Parameter reference
+
+### Typography
+
+| Parameter | Default | Description |
+|---|---|---|
+| `font.family` | OS-dependent | Font for Unicode range U+0000–U+007F. Set to `"Arial"` on Windows, `"Helvetica"` on macOS, `"DejaVu Sans"` on Linux. |
+| `cs.family` | same as `font.family` | Complex-script font (e.g. Arabic). Word output only. |
+| `eastasia.family` | same as `font.family` | East Asian font (e.g. Japanese). Word output only. |
+| `hansi.family` | same as `font.family` | High ANSI font for characters not covered by other ranges. Word output only. |
+| `font.size` | `11` | Font size in points. |
+| `font.color` | `"black"` | Font color; any R color name or hex string. |
+| `line_spacing` | `1` | Line spacing multiplier. `1` = single, `2` = double. |
+
+<Note>
+When outputting to Word with non-ASCII characters, set both `font.family` and `hansi.family` to the same font name.
+</Note>
+
+### Alignment and padding
+
+| Parameter | Default | Description |
+|---|---|---|
+| `text.align` | `"left"` | Cell text alignment. One of `"left"`, `"right"`, `"center"`, `"justify"`. |
+| `padding` | — | Shortcut that sets all four padding values at once. |
+| `padding.bottom` | `5` | Bottom padding in points. |
+| `padding.top` | `5` | Top padding in points. |
+| `padding.left` | `5` | Left padding in points. |
+| `padding.right` | `5` | Right padding in points. |
+
+### Borders and background
+
+| Parameter | Default | Description |
+|---|---|---|
+| `border.color` | `"#666666"` | Border color. |
+| `border.width` | `0.75` | Border width in points. |
+| `background.color` | `"transparent"` | Cell background color. |
+
+### Table layout and alignment
+
+| Parameter | Default | Description |
+|---|---|---|
+| `table.layout` | `"fixed"` | Column-width algorithm. `"fixed"` or `"autofit"`. |
+| `table_align` | `"center"` | Horizontal alignment of the table itself. `"left"`, `"center"`, or `"right"`. |
+
+### Number formatting
+
+| Parameter | Default | Description |
+|---|---|---|
+| `decimal.mark` | `"."` | Decimal separator used by `colformat_num()` / `colformat_double()`. |
+| `big.mark` | `","` | Thousands separator. |
+| `digits` | `1` | Number of decimal digits for `colformat_double()`. |
+| `pct_digits` | `1` | Decimal digits for percentage columns. |
+| `na_str` | `""` | String shown in place of `NA`. |
+| `nan_str` | `""` | String shown in place of `NaN`. |
+| `fmt_date` | `"%Y-%m-%d"` | Date format string; see `?strptime`. |
+| `fmt_datetime` | `"%Y-%m-%d %H:%M:%S"` | Datetime format string. |
+
+### HTML-specific
+
+| Parameter | Default | Description |
+|---|---|---|
+| `extra_css` | `""` | Additional CSS injected into the table's `<style>` block. |
+| `scroll` | `NULL` | Pass a list to enable a scrollable HTML box. See `scroll` in `set_table_properties()`. |
+
+### PDF / LaTeX-specific
+
+| Parameter | Default | Description |
+|---|---|---|
+| `fonts_ignore` | `FALSE` | Set to `TRUE` when using pdflatex, which cannot embed custom fonts. xelatex and lualatex support fonts normally. |
+| `tabcolsep` | `2` | Space between text and the left/right cell border (LaTeX). |
+| `arraystretch` | `1.5` | Row height multiplier relative to default (LaTeX). |
+| `float` | `"none"` | PDF float placement. Options: `"none"`, `"float"`, `"wrap-r"`, `"wrap-l"`, `"wrap-i"`, `"wrap-o"`. |
+
+### Word-specific
+
+| Parameter | Default | Description |
+|---|---|---|
+| `split` | `TRUE` | Allow rows to break across pages (`"Allow row to break across pages"` in Word). |
+| `keep_with_next` | `FALSE` | Default for the `paginate()` function's keep-rows-together option. |
+
+### Theme
+
+| Parameter | Default | Description |
+|---|---|---|
+| `theme_fun` | `"theme_booktabs"` | Name of the default theme function, or a theme function itself. Applied to every new flextable. |
+
+### Post-processing hooks
+
+Post-processing functions run just before the table is rendered. Use them to apply output-specific modifications without repeating yourself.
+
+| Parameter | Description |
+|---|---|
+| `post_process_all` | Runs first, before any output-specific hook. |
+| `post_process_pdf` | Runs for PDF output only. |
+| `post_process_docx` | Runs for Word output only. |
+| `post_process_html` | Runs for HTML output only. |
+| `post_process_pptx` | Runs for PowerPoint output only. |
+
+Each function receives the flextable object and must return a flextable object.
+
+```r
+# Add a footer line only in Word
+set_flextable_defaults(
+  post_process_docx = function(ft) {
+    add_footer_lines(ft, "Source: internal data")
+  }
+)
+```
+
+## Retrieving current defaults
+
+`get_flextable_defaults()` returns the current defaults as a named list:
+
+```r
+get_flextable_defaults()
+```
+
+Printing the result shows a structured summary grouped by style properties, cell content settings, table layout, and theme.
+
+## Resetting to package defaults
+
+`init_flextable_defaults()` discards any customizations and restores the original package defaults:
+
+```r
+init_flextable_defaults()
+```
+
+Call this at the end of an example or test to avoid leaking state.
+
+## Best practice: setup chunk
+
+Set your defaults once in the document setup chunk so every table in the document inherits them:
+
+```r
+library(flextable)
+
+set_flextable_defaults(
+  font.size = 10,
+  font.family = "Arial",
+  padding = 3,
+  table.layout = "autofit",
+  border.color = "#444444",
+  na_str = "—"
+)
+```
+
+<Tip>
+Use `fp_text_default()` and `fp_border_default()` when building custom chunks or borders — they automatically read from the active defaults so your custom styles stay in sync with the rest of the table.
+</Tip>
+
+## Default-aware helper objects
+
+`fp_text_default()` creates an `officer::fp_text()` object pre-filled with the current font family, size, and color. Only override the properties you need:
+
+```r
+set_flextable_defaults(
+  font.size = 11, font.color = "#303030",
+  padding = 3, table.layout = "autofit"
+)
+
+z <- flextable(head(cars))
+
+z <- compose(
+  x = z,
+  i = ~ speed < 6,
+  j = "speed",
+  value = as_paragraph(
+    as_chunk("slow... ", props = fp_text_default(color = "red")),
+    as_chunk(speed, props = fp_text_default(italic = TRUE))
+  )
+)
+z
+
+init_flextable_defaults()
+```
+
+Similarly, `fp_border_default()` creates an `officer::fp_border()` using the current border color and width:
+
+```r
+set_flextable_defaults(border.color = "orange")
+
+z <- flextable(head(cars))
+z <- theme_vanilla(z)
+z <- vline(z, j = 2, part = "all", border = fp_border_default())
+z
+
+init_flextable_defaults()
+```

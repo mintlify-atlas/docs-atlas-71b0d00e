@@ -1,0 +1,95 @@
+---
+title: compose() and mk_par()
+description: Set cell content from formatted paragraph chunks, mixing text, images, equations, and other inline elements.
+---
+
+`compose()` and `mk_par()` are identical functions that set the displayed content of selected cells using paragraph chunks. They handle complex formatting such as inline images, superscripts, formatted text, and hyperlinks.
+
+<Note>
+  `mk_par()` is an alias for `compose()` introduced to avoid a naming conflict with `purrr::compose()`. Prefer `mk_par()` in projects that use purrr.
+</Note>
+
+## Function signature
+
+```r
+compose(x, i = NULL, j = NULL, value, part = "body", use_dot = FALSE)
+
+mk_par(x, i = NULL, j = NULL, value, part = "body", use_dot = FALSE)
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. Accepts integer indices, a one-sided formula (e.g., `~ dist > 9`), or a logical vector. `NULL` selects all rows.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Accepts integer indices, column names, a formula, or a logical vector.
+</ParamField>
+
+<ParamField path="value" type="paragraph" required>
+  A call to `as_paragraph()` defining the new cell content.
+</ParamField>
+
+<ParamField path="part" type="string" default='body'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+<ParamField path="use_dot" type="logical" default="FALSE">
+  If `TRUE`, the `value` expression is evaluated in a data frame augmented with a column named `.` containing the values of the `j`th column. This enables column-referencing syntax like `minibar(., ...)` or `as_chunk(.)` inside `as_paragraph()`.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Add formatted text with a superscript to a specific column, targeting rows conditionally:
+
+```r
+ft <- flextable(head(cars, n = 5), col_keys = c("speed", "dist", "comment"))
+ft <- mk_par(
+  x = ft,
+  j = "comment",
+  i = ~ dist > 9,
+  value = as_paragraph(
+    colorize(as_i("speed: "), color = "gray"),
+    as_sup(sprintf("%.0f", speed))
+  )
+)
+ft <- set_table_properties(ft, layout = "autofit")
+ft
+```
+
+Use `use_dot = TRUE` to reference the column's own values inside `as_paragraph()`:
+
+```r
+set.seed(8)
+dat <- iris[sample.int(n = 150, size = 10), ]
+dat <- dat[order(dat$Species), ]
+
+ft <- flextable(dat)
+ft <- mk_par(
+  ft,
+  j = ~ . - Species,
+  value = as_paragraph(
+    minibar(., barcol = "white", height = .1)
+  ),
+  use_dot = TRUE
+)
+ft <- theme_vader(ft)
+ft <- autofit(ft)
+ft
+```
+
+## See also
+
+- [`as_paragraph()`](/reference/as-paragraph) — build paragraph content from chunks
+- [`as_chunk()`](/reference/inline-elements) — formatted text chunk
+- [`append_chunks()`](/reference/inline-elements) — append chunks to existing cell content
+- [`footnote()`](/reference/footnote) — add footnote references and notes

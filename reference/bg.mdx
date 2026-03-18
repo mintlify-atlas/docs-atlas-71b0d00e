@@ -1,0 +1,99 @@
+---
+title: bg()
+description: Set the background color of selected cells in a flextable.
+---
+
+`bg()` changes the background color of selected rows and columns. You can supply a fixed color string or a function that maps cell values to colors, which is useful for heat-map-style formatting.
+
+## Function signature
+
+```r
+bg(x, i = NULL, j = NULL, bg, part = "body", source = j)
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. Accepts integer indices, a one-sided formula (e.g., `~ qsec < 18`), or a logical vector. `NULL` selects all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Accepts integer indices, column names, a formula, or a logical vector. `NULL` selects all columns.
+</ParamField>
+
+<ParamField path="bg" type="character | function" required>
+  Background color to apply. Can be:
+
+  - A single color string (e.g., `"#EFEFEF"` or `"wheat"`) applied to all selected cells.
+  - A function that receives a column of data and returns a character vector of colors. Functions from the `scales` package (e.g., `col_numeric()`) work directly.
+</ParamField>
+
+<ParamField path="part" type="string" default='"body"'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+<ParamField path="source" type="integer | character">
+  When `bg` is a function, `source` specifies which dataset column(s) to pass as the argument to that function. This is useful when you want to color cells in column `j` based on values from a different column (including hidden columns not in `colkeys`). Defaults to `j`.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Apply a fixed background color to the header:
+
+```r
+ft <- flextable(head(mtcars))
+ft <- bg(ft, bg = "wheat", part = "header")
+ft
+```
+
+Color body rows conditionally using a formula:
+
+```r
+ft <- flextable(head(mtcars))
+ft <- bg(ft, i = ~ qsec < 18, bg = "#EFEFEF", part = "body")
+ft
+```
+
+Color an entire column across all parts:
+
+```r
+ft <- flextable(head(mtcars))
+ft <- bg(ft, j = "drat", bg = "#606060", part = "all")
+ft <- color(ft, j = "drat", color = "white", part = "all")
+ft
+```
+
+Use a `scales` color function for continuous heat-map coloring:
+
+```r
+if (require("scales")) {
+  ft <- flextable(head(iris))
+  colourer <- col_numeric(
+    palette = c("wheat", "red"),
+    domain = c(0, 7)
+  )
+  ft <- bg(ft,
+    j = c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"),
+    bg = colourer, part = "body"
+  )
+  ft
+}
+```
+
+<Note>
+  Word does not support transparency in table cell or paragraph shading. Use solid color values only when targeting Word output.
+</Note>
+
+## See also
+
+- [`color()`](/reference/color) — set text color
+- [`highlight()`](/reference/highlight) — highlight text with a background color
+- [`style()`](/reference/style) — apply multiple formatting properties at once

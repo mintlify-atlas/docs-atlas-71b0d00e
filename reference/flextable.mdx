@@ -1,0 +1,103 @@
+---
+title: flextable()
+description: Create a flextable object from a data frame.
+---
+
+`flextable()` creates a flextable object from a data frame. flextable objects support rich text formatting, cell merging, custom headers and footers, and export to Word, PowerPoint, HTML, PDF, and other formats.
+
+A flextable is composed of three parts: **header**, **body**, and **footer**. Most formatting functions accept a `part` argument to target one or all parts.
+
+## Function signature
+
+```r
+flextable(
+  data,
+  col_keys = names(data),
+  cwidth = 0.75,
+  cheight = 0.25,
+  defaults = list(),
+  theme_fun = theme_booktabs,
+  use_labels = TRUE
+)
+```
+
+## Parameters
+
+<ParamField path="data" type="data.frame" required>
+  A data frame. Also accepts `data.table` and `tibble` objects, which are coerced to `data.frame` internally.
+</ParamField>
+
+<ParamField path="col_keys" type="character" default="names(data)">
+  Column names or keys to display. Names not present in `data` are added as blank columns.
+</ParamField>
+
+<ParamField path="cwidth" type="numeric" default="0.75">
+  Initial cell width in inches.
+</ParamField>
+
+<ParamField path="cheight" type="numeric" default="0.25">
+  Initial cell height in inches.
+</ParamField>
+
+<ParamField path="defaults" type="list" deprecated>
+  Deprecated. Use `set_flextable_defaults()` instead.
+</ParamField>
+
+<ParamField path="theme_fun" type="function" deprecated>
+  Deprecated. Use `set_flextable_defaults()` instead.
+</ParamField>
+
+<ParamField path="use_labels" type="logical" default="TRUE">
+  If `TRUE`, column labels and value labels present in the dataset (e.g., from `haven` or `labelled` packages) are used as display headers.
+</ParamField>
+
+## Return value
+
+An object of class `flextable`.
+
+## Special characters
+
+flextable translates `\n` into a soft return (a line break within the same paragraph, not a new paragraph) and `\t` into a tab character. Tab rendering varies by output format:
+
+- **HTML** — em space entity
+- **Word** — native Word tab element
+- **PowerPoint** — native PowerPoint tab element
+- **LaTeX** — `\quad`
+
+## Default formatting
+
+Formatting defaults are applied automatically to every new flextable. Use `set_flextable_defaults()` to change them globally, `init_flextable_defaults()` to reset them, and `get_flextable_defaults()` to inspect the current values.
+
+## Examples
+
+```r
+ft <- flextable(head(mtcars))
+ft
+```
+
+Display only selected columns:
+
+```r
+ft <- flextable(
+  data = head(iris),
+  col_keys = c("Species", "Sepal.Length", "Sepal.Width")
+)
+ft
+```
+
+Add a blank spacer column:
+
+```r
+ft <- flextable(
+  data = head(iris),
+  col_keys = c("Species", "blank_col", "Sepal.Length")
+)
+ft
+```
+
+## See also
+
+- [`qflextable()`](/reference/qflextable) — quick flextable with fixed layout and autofit
+- [`as_flextable()`](/reference/as-flextable) — convert other objects to flextable
+- [`set_flextable_defaults()`](/reference/set-flextable-defaults) — set global defaults
+- [`style()`](/reference/style), [`autofit()`](/reference/autofit), [`theme_booktabs()`](/reference/themes)

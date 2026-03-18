@@ -1,0 +1,90 @@
+---
+title: style()
+description: Apply text, paragraph, and cell formatting properties to a flextable selection in a single call.
+---
+
+`style()` applies text, paragraph, and cell formatting properties to a selection of rows and columns in one call. It bundles what the individual convenience functions do separately, using `officer` formatting objects.
+
+Use `style()` when you need to change multiple property types (text, paragraph, cell) on the same selection in one operation. Use the individual functions (`bold()`, `color()`, `align()`, etc.) when you only need to change a single property.
+
+## Function signature
+
+```r
+style(
+  x,
+  i = NULL,
+  j = NULL,
+  pr_t = NULL,
+  pr_p = NULL,
+  pr_c = NULL,
+  part = "body"
+)
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. Accepts integer indices, a one-sided formula (e.g., `~ col > 5`), or a logical vector. `NULL` selects all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Accepts integer indices, column names, a formula, or a logical vector. `NULL` selects all columns.
+</ParamField>
+
+<ParamField path="pr_t" type="fp_text | fp_text_lite">
+  An `officer::fp_text()` or `officer::fp_text_lite()` object defining text-level formatting: font family, font size, color, bold, italic, underline, and related properties. Equivalent to combining `bold()`, `italic()`, `color()`, `fontsize()`, `font()`, and `highlight()`.
+</ParamField>
+
+<ParamField path="pr_p" type="fp_par | fp_par_lite">
+  An `officer::fp_par()` or `officer::fp_par_lite()` object defining paragraph-level formatting: text alignment, padding, line spacing, and tab stops. Equivalent to combining `align()`, `padding()`, and `line_spacing()`.
+</ParamField>
+
+<ParamField path="pr_c" type="fp_cell">
+  An `officer::fp_cell()` object defining cell-level formatting: background color, borders, and vertical alignment. Equivalent to combining `bg()`, `border()`, and `valign()`.
+</ParamField>
+
+<ParamField path="part" type="string" default='body'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Apply cell and paragraph formatting to the whole table, then apply text formatting to a row/column subset:
+
+```r
+library(officer)
+def_cell <- fp_cell(border = fp_border(color = "wheat"))
+
+def_par <- fp_par(text.align = "center")
+
+ft <- flextable(head(mtcars))
+
+ft <- style(ft, pr_c = def_cell, pr_p = def_par, part = "all")
+ft <- style(ft, ~ drat > 3.5, ~ vs + am + gear + carb,
+  pr_t = fp_text(color = "red", italic = TRUE)
+)
+
+ft
+```
+
+## Property types reference
+
+| Argument | officer object | Equivalent convenience functions |
+|----------|---------------|----------------------------------|
+| `pr_t` | `fp_text()`, `fp_text_lite()` | `bold()`, `italic()`, `color()`, `fontsize()`, `font()`, `highlight()` |
+| `pr_p` | `fp_par()`, `fp_par_lite()` | `align()`, `padding()`, `line_spacing()` |
+| `pr_c` | `fp_cell()` | `bg()`, `border()`, `valign()` |
+
+## See also
+
+- [`bold()`](/reference/bold), [`italic()`](/reference/italic), [`color()`](/reference/color) — individual text formatting shortcuts
+- [`fontsize()`](/reference/fontsize), [`font()`](/reference/font), [`highlight()`](/reference/highlight) — more text shortcuts
+- [`set_flextable_defaults()`](/reference/set-flextable-defaults) — change initial formatting for all new tables

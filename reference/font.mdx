@@ -1,0 +1,84 @@
+---
+title: font()
+description: Set the font family on selected rows and columns of a flextable.
+---
+
+`font()` changes the font family of a selection of cells in a flextable. It supports separate font families for Latin, complex-script (e.g., Arabic), East Asian (e.g., Japanese), and other Unicode ranges in Word and PowerPoint outputs.
+
+Google Fonts can be registered with `gdtools::register_gfont()` and are automatically embedded in HTML output.
+
+## Function signature
+
+```r
+font(
+  x,
+  i = NULL,
+  j = NULL,
+  fontname,
+  part = "body",
+  cs.family = fontname,
+  hansi.family = fontname,
+  eastasia.family = fontname
+)
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. Accepts integer indices, a one-sided formula (e.g., `~ col > 5`), or a logical vector. `NULL` selects all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Accepts integer indices, column names, a formula, or a logical vector. `NULL` selects all columns.
+</ParamField>
+
+<ParamField path="fontname" type="string" required>
+  The font family name (e.g., `"Arial"`, `"Times New Roman"`). In Word and PowerPoint output, this applies to characters in the Latin Unicode range (U+0000–U+007F).
+</ParamField>
+
+<ParamField path="part" type="string" default='body'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+<ParamField path="cs.family" type="string" default="fontname">
+  Font family for complex-script Unicode characters (e.g., Arabic). Applies only to Word and PowerPoint outputs. Defaults to the value of `fontname`.
+</ParamField>
+
+<ParamField path="hansi.family" type="string" default="fontname">
+  Font family for Unicode characters that do not fall into the Latin, complex-script, or East Asian categories. Applies only to Word and PowerPoint outputs. Defaults to the value of `fontname`.
+</ParamField>
+
+<ParamField path="eastasia.family" type="string" default="fontname">
+  Font family for East Asian Unicode characters (e.g., Japanese, Chinese). Applies only to Word and PowerPoint outputs. Defaults to the value of `fontname`.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Apply a decorative font to the header and a specific column:
+
+```r
+library(gdtools)
+fontname <- "Brush Script MT"
+
+if (font_family_exists(fontname)) {
+  ft_1 <- flextable(head(iris))
+  ft_2 <- font(ft_1, fontname = fontname, part = "header")
+  ft_2 <- font(ft_2, fontname = fontname, j = 5)
+  ft_2
+}
+```
+
+## See also
+
+- [`fontsize()`](/reference/fontsize) — set font size
+- [`bold()`](/reference/bold)
+- [`italic()`](/reference/italic)
+- [`style()`](/reference/style) — apply multiple formatting properties at once

@@ -1,0 +1,226 @@
+---
+title: "Column and row sizing"
+description: "Set column widths, row heights, and table layout properties in a flextable."
+---
+
+flextable uses inches as its internal unit for all size-related functions. Most functions also accept `"cm"` or `"mm"` through the `unit` argument.
+
+## Column widths
+
+`width()` sets the width of one or more columns. Pass a single value to apply the same width to all selected columns, or a vector of the same length as the selection:
+
+```r
+library(flextable)
+
+ft <- flextable(head(iris))
+ft <- width(ft, width = 1.5)   # all columns to 1.5 in
+ft
+```
+
+Target specific columns with the `j` selector:
+
+```r
+ft <- width(ft, j = c("Sepal.Length", "Sepal.Width"), width = 1)
+ft <- width(ft, j = "Species",                        width = 0.8)
+```
+
+<Note>
+`width()` has no effect when the table layout is set to `"autofit"` via `set_table_properties()`. In that mode, the browser or Word engine controls column widths.
+</Note>
+
+## Row heights
+
+`height()` sets the height of selected rows. It only takes effect when the height rule (see `hrule()`) is `"atleast"` or `"exact"`.
+
+```r
+ft <- flextable(head(iris))
+ft <- height(ft, height = .5)
+ft <- hrule(ft, rule = "exact")
+ft
+```
+
+Target specific rows with the `i` selector:
+
+```r
+ft <- height(ft, i = 1:3, height = 0.4)
+```
+
+`height_all()` is a convenience wrapper that applies one height to every row in a part:
+
+```r
+ft <- flextable(head(iris))
+ft <- height_all(ft, height = 1)
+ft <- hrule(ft, rule = "exact")
+ft
+```
+
+Pass `part = "all"` to set the same height across header, body, and footer in one call.
+
+## Row height rule
+
+`hrule()` controls how row heights are interpreted. The rule applies to Word and PowerPoint output only; it has no effect on HTML or PDF.
+
+| Rule | Behaviour |
+|---|---|
+| `"auto"` (default) | Row grows to fit content; values set by `height()` are ignored |
+| `"atleast"` | Row is at least the specified height, but can grow if content is taller |
+| `"exact"` | Row is exactly the specified height; content that overflows is clipped |
+
+```r
+ft <- flextable(head(iris))
+ft <- width(ft, width = 1.5)
+ft <- height(ft, height = 0.75, part = "header")
+ft <- hrule(ft, rule = "exact", part = "header")
+ft
+```
+
+Apply a rule to all parts at once:
+
+```r
+ft <- hrule(ft, rule = "atleast", part = "all")
+```
+
+## Auto-fit to content
+
+`autofit()` computes the minimum column widths and row heights required to display all content on a single line, then applies them:
+
+```r
+ft <- flextable(head(mtcars))
+ft <- autofit(ft)
+ft
+```
+
+Add a small margin with `add_w` and `add_h` (in inches by default):
+
+```r
+ft <- autofit(ft, add_w = 0.1, add_h = 0.05)
+```
+
+Control which table parts are included with the `part` argument:
+
+```r
+ft <- autofit(ft, part = c("body", "header"))  # default
+ft <- autofit(ft, part = "all")                # include footer too
+```
+
+The `hspans` argument controls how horizontally spanned cells influence width calculation:
+
+| Value | Effect |
+|---|---|
+| `"none"` (default) | Spanned cells do not contribute to column width |
+| `"divided"` | Spanned cell width is divided equally across the spanned columns |
+| `"included"` | Full spanned cell width is used in the calculation |
+
+<Warning>
+`autofit()` is not the same as the Microsoft Word *AutoFit* feature. It calculates minimum widths based on content but does not prevent columns from exceeding the page width in paginated documents.
+</Warning>
+
+## Preview auto-fit dimensions without applying
+
+`dim_pretty()` returns the same minimum widths and heights that `autofit()` would apply, without changing the flextable:
+
+```r
+ftab <- flextable(head(mtcars))
+dim_pretty(ftab)
+```
+
+This is useful when you want to inspect calculated sizes or base manual adjustments on them.
+
+## Fit to a maximum width
+
+`fit_to_width()` reduces font sizes incrementally until the total table width fits within a target:
+
+```r
+ft <- qflextable(head(mtcars))
+ft <- width(ft, width = 1)
+
+ft <- fit_to_width(ft, max_width = 4)
+ft
+```
+
+The function decreases font size by `inc` points per iteration and stops either when the table fits or after `max_iter` iterations.
+
+## Get overall table dimensions
+
+`flextable_dim()` returns the total width, height, and aspect ratio of the table as a named list:
+
+```r
+ftab <- flextable(head(iris))
+flextable_dim(ftab)
+
+ftab <- autofit(ftab)
+flextable_dim(ftab)
+```
+
+The names are `widths`, `heights`, and `aspect_ratio` (height divided by width).
+
+## Per-column and per-row dimensions
+
+`dim()` returns a list with individual column widths and row heights:
+
+```r
+dim(ftab)
+# $widths  — named numeric vector, one value per column
+# $heights — numeric vector, one value per row across all parts
+```
+
+## Table layout and proportional width
+
+`set_table_properties()` controls two orthogonal concepts: the **layout algorithm** and the **relative width** of the table.
+
+```r
+ft <- flextable(head(cars))
+ft <- autofit(ft)
+
+# occupy half the available page width in HTML / Word
+ft <- set_table_properties(ft, width = 0.5, layout = "autofit")
+```
+
+### Layout modes
+
+| Layout | Behaviour |
+|---|---|
+| `"fixed"` (default) | Column widths set by `width()` or `autofit()` are used exactly |
+| `"autofit"` | The browser or Word engine distributes column widths; `width()` values are ignored |
+
+### Width parameter
+
+`width` is a proportion from `0` to `1` representing the fraction of the available container width the table should occupy. Its exact interpretation depends on the output format:
+
+- **HTML**: minimum width of the container.
+- **Word**: preferred size; Word may not strictly respect it.
+- **PDF / PowerPoint**: no effect.
+
+The default is `0`, which means use only as much width as the content requires.
+
+### Alignment
+
+```r
+ft <- set_table_properties(ft, align = "center")
+```
+
+Supported values are `"left"`, `"center"`, and `"right"`. This sets the horizontal position of the table within its container and applies to Word, HTML, and PDF output.
+
+### HTML scroll box
+
+Wrap the table in a scrollable container for wide tables in HTML:
+
+```r
+set.seed(2)
+dat <- as.data.frame(lapply(1:14, function(x) rnorm(20)))
+names(dat) <- paste0("col", 1:14)
+
+ft <- flextable(dat)
+ft <- colformat_double(ft)
+ft <- autofit(ft)
+ft <- set_table_properties(
+  ft,
+  opts_html = list(
+    scroll = list(
+      height             = "500px",
+      freeze_first_column = TRUE
+    )
+  )
+)
+ft
+```

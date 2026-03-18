@@ -1,0 +1,141 @@
+---
+title: HTML output
+description: Save flextable tables as standalone HTML files, use them in Shiny apps, and customize their appearance with CSS.
+---
+
+flextable renders to HTML natively. HTML output uses a scoped `<style>` block and a Shadow DOM wrapper to isolate table styles from the rest of the page.
+
+## Save to an HTML file
+
+`save_as_html()` writes one or more flextable objects to a standalone HTML file. Named objects produce `<h2>` section headings above each table:
+
+```r
+library(flextable)
+
+ft1 <- flextable(head(iris))
+tf1 <- tempfile(fileext = ".html")
+
+if (rmarkdown::pandoc_available()) {
+  save_as_html(ft1, path = tf1)
+}
+```
+
+Multiple tables with section titles:
+
+```r
+ft2 <- flextable(head(mtcars))
+tf2 <- tempfile(fileext = ".html")
+
+if (rmarkdown::pandoc_available()) {
+  save_as_html(
+    `iris table` = ft1,
+    `mtcars table` = ft2,
+    path = tf2,
+    title = "Summary tables"
+  )
+}
+```
+
+**Parameters:**
+
+| Parameter | Description | Default |
+|---|---|---|
+| `...` | flextable objects, optionally named | |
+| `values` | Named list of flextable objects (alternative to `...`) | `NULL` |
+| `path` | Output file path ending in `.html` | |
+| `title` | HTML page `<title>` | `"&#32;"` |
+| `lang` | IETF language tag for the `<html lang>` attribute | `"en"` |
+
+## Use in Shiny with `htmltools_value()`
+
+`htmltools_value()` returns a `tagList` containing the table HTML and its CSS dependencies. Use it inside `renderUI()` in Shiny:
+
+```r
+library(shiny)
+library(flextable)
+
+ui <- fluidPage(
+  uiOutput("ft_table")
+)
+
+server <- function(input, output) {
+  output$ft_table <- renderUI({
+    ft <- flextable(head(iris))
+    ft <- autofit(ft)
+    htmltools_value(ft)
+  })
+}
+
+shinyApp(ui, server)
+```
+
+You can control table alignment with the `ft.align` argument:
+
+```r
+htmltools_value(ft, ft.align = "left")
+```
+
+## Scrollable tables
+
+For large tables, enable scrolling with `set_table_properties()`:
+
+```r
+ft <- flextable(head(iris, 100))
+ft <- set_table_properties(
+  ft,
+  scroll = list(height = "300px")
+)
+ft
+```
+
+This wraps the table in a `div` with `overflow-y: auto` and a fixed height. You can also freeze the first column:
+
+```r
+ft <- set_table_properties(
+  ft,
+  scroll = list(
+    height = "300px",
+    freeze_first_column = TRUE
+  )
+)
+```
+
+In R Markdown, use the `ft.htmlscroll` chunk option to enable horizontal scrolling without calling `set_table_properties()`:
+
+````md
+```{r ft.htmlscroll=TRUE}
+flextable(head(iris))
+```
+````
+
+## CSS customization
+
+Use `set_flextable_defaults(extra_css = ...)` to inject additional CSS into every table rendered in the session:
+
+```r
+set_flextable_defaults(
+  extra_css = ".tabwid table { font-family: 'Helvetica Neue', sans-serif; }"
+)
+```
+
+You can also pass extra CSS directly through `set_table_properties()`:
+
+```r
+ft <- set_table_properties(
+  ft,
+  scroll = list(
+    height = "400px",
+    add_css = "border: 1px solid #ccc;"
+  )
+)
+```
+
+## HTML dependencies
+
+flextable HTML output depends on a bundled CSS file (`tabwid.css`). When embedding flextable output in custom htmltools-based pages, retrieve the dependency objects with:
+
+```r
+deps <- flextable_html_dependency()
+```
+
+This returns a list of `htmltools::htmlDependency` objects that you can attach to your own tags using `htmltools::attachDependencies()`.

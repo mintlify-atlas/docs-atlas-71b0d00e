@@ -1,0 +1,183 @@
+---
+title: autofit() and sizing utilities
+description: Automatically size flextable columns and rows, compute dimensions, and constrain table width.
+---
+
+flextable provides several functions to control and inspect table dimensions.
+
+---
+
+## `autofit()`
+
+Computes and applies optimised column widths and row heights based on the minimum size required to display each cell's content on one line.
+
+```r
+autofit(
+  x,
+  add_w = 0.1,
+  add_h = 0.1,
+  part = c("body", "header"),
+  unit = "in",
+  hspans = "none"
+)
+```
+
+<Note>
+  `autofit()` is not the same as the Microsoft Word *Autofit* feature. It calculates minimum content widths and applies them as fixed widths. If you need a percentage-based responsive layout, use `set_table_properties(layout = "autofit")` instead.
+
+  When `autofit()` is used with rotated text, rotation is ignored in the size calculation. Use `dim_pretty()` and `width()` manually in that case.
+</Note>
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="add_w" type="number" default="0.1">
+  Extra width to add to each column, in the unit specified by `unit`.
+</ParamField>
+
+<ParamField path="add_h" type="number" default="0.1">
+  Extra height to add to each row, in the unit specified by `unit`.
+</ParamField>
+
+<ParamField path="part" type="string | character vector" default='c("body", "header")'>
+  Which parts to include in the size calculation: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+<ParamField path="unit" type="string" default='"in"'>
+  Unit for `add_w` and `add_h`. One of `"in"` (inches), `"cm"`, or `"mm"`.
+</ParamField>
+
+<ParamField path="hspans" type="string" default='"none"'>
+  How to treat horizontally spanned (merged) cells in the width calculation:
+
+  - `"none"` — merged cells contribute 0 width (do not influence column widths).
+  - `"divided"` — merged cell width is divided equally among the spanned columns.
+  - `"included"` — merged cell widths are included as-is in the calculation.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(mtcars))
+ft <- autofit(ft)
+ft
+```
+
+---
+
+## `dim_pretty()`
+
+Returns the minimum estimated column widths and row heights without applying them to the table. Use this to inspect sizes before manually calling `width()` or `height()`.
+
+```r
+dim_pretty(x, part = "all", unit = "in", hspans = "none")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="part" type="string" default='"all"'>
+  Which parts to include: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+<ParamField path="unit" type="string" default='"in"'>
+  Unit for returned values. One of `"in"` (inches), `"cm"`, or `"mm"`.
+</ParamField>
+
+<ParamField path="hspans" type="string" default='"none"'>
+  How to treat horizontally spanned cells. Same values as for `autofit()`.
+</ParamField>
+
+### Return value
+
+A list with two elements:
+- `widths` — numeric vector of minimum column widths.
+- `heights` — numeric vector of minimum row heights.
+
+### Example
+
+```r
+ft <- flextable(head(mtcars))
+dim_pretty(ft)
+```
+
+---
+
+## `fit_to_width()`
+
+Shrinks the table to fit within a maximum total width by iteratively decreasing font sizes until the table fits.
+
+```r
+fit_to_width(x, max_width, inc = 1L, max_iter = 20, unit = "in")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="max_width" type="number" required>
+  Maximum total width the table should occupy.
+</ParamField>
+
+<ParamField path="inc" type="integer" default="1">
+  Amount to decrease the font size (in points) at each iteration.
+</ParamField>
+
+<ParamField path="max_iter" type="integer" default="20">
+  Maximum number of shrink iterations before stopping.
+</ParamField>
+
+<ParamField path="unit" type="string" default='"in"'>
+  Unit for `max_width`. One of `"in"` (inches), `"cm"`, or `"mm"`.
+</ParamField>
+
+### Example
+
+```r
+ft <- qflextable(head(mtcars))
+ft <- width(ft, width = 1)
+ft <- fit_to_width(ft, max_width = 4)
+ft
+```
+
+---
+
+## `flextable_dim()`
+
+Returns the overall width, height, and aspect ratio of the table as a named list.
+
+```r
+flextable_dim(x, unit = "in")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="unit" type="string" default='"in"'>
+  Unit for returned values. One of `"in"` (inches), `"cm"`, or `"mm"`.
+</ParamField>
+
+### Return value
+
+A named list with:
+- `widths` — total table width.
+- `heights` — total table height.
+- `aspect_ratio` — `heights / widths`.
+
+### Example
+
+```r
+ft <- flextable(head(iris))
+flextable_dim(ft)
+ft <- autofit(ft)
+flextable_dim(ft)
+```
+
+## See also
+
+- [`width()`](/reference/width-height) — set individual column widths
+- [`height()`](/reference/width-height) — set individual row heights
+- [`set_table_properties()`](/reference/set-table-properties) — set layout mode and table-level width

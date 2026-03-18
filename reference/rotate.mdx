@@ -1,0 +1,107 @@
+---
+title: rotate()
+description: Rotate cell text direction in a flextable.
+---
+
+`rotate()` changes the text direction of selected cells. It supports 90-degree rotation increments and is particularly useful for compact column headers.
+
+## Function signature
+
+```r
+rotate(x, i = NULL, j = NULL, rotation, align = NULL, part = "body")
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. `NULL` selects all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. `NULL` selects all columns.
+</ParamField>
+
+<ParamField path="rotation" type="string" required>
+  Text direction. One of:
+
+  - `"lrtb"` — left to right, top to bottom (standard horizontal, the default in most output formats).
+  - `"tbrl"` — top to bottom, right to left (vertical, rotated 90° clockwise — text reads downward).
+  - `"btlr"` — bottom to top, left to right (vertical, rotated 270° clockwise — text reads upward).
+</ParamField>
+
+<ParamField path="align" type="string">
+  Vertical alignment of the paragraph within the cell after rotation. One of `"top"`, `"center"`, or `"bottom"`. `NULL` leaves the current alignment unchanged.
+</ParamField>
+
+<ParamField path="part" type="string" default='"body"'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Rotate header labels to save horizontal space:
+
+```r
+library(flextable)
+
+ft <- flextable(head(iris))
+ft <- rotate(ft, j = 1:4, align = "bottom", rotation = "tbrl", part = "header")
+ft <- rotate(ft, j = 5, align = "bottom", rotation = "btlr", part = "header")
+
+# Word and PowerPoint require explicit height and exact rule for rotated headers
+ft <- height(ft, height = 1.2, part = "header")
+ft <- hrule(ft, i = 1, rule = "exact", part = "header")
+ft
+```
+
+Combine rotation with horizontal and vertical alignment:
+
+```r
+dat <- data.frame(
+  a = c("left-top", "left-middle", "left-bottom"),
+  b = c("center-top", "center-middle", "center-bottom"),
+  c = c("right-top", "right-middle", "right-bottom")
+)
+
+ft <- flextable(dat)
+ft <- theme_box(ft)
+ft <- height_all(x = ft, height = 1.3, part = "body")
+ft <- hrule(ft, rule = "exact")
+ft <- rotate(ft, rotation = "tbrl")
+ft <- width(ft, width = 1.3)
+
+ft <- align(ft, j = 1, align = "left")
+ft <- align(ft, j = 2, align = "center")
+ft <- align(ft, j = 3, align = "right")
+
+ft <- valign(ft, i = 1, valign = "top")
+ft <- valign(ft, i = 2, valign = "center")
+ft <- valign(ft, i = 3, valign = "bottom")
+ft
+```
+
+<Warning>
+  Word and PowerPoint do not handle automatic row height for rotated content. You must explicitly set row heights with `height()` and set the height rule to `"exact"` with `hrule()`, otherwise the text will be clipped.
+
+  Rotation is also ignored when `autofit()` calculates column widths. Use `dim_pretty()` and `width()` manually instead.
+</Warning>
+
+<Note>
+  flextable only supports rotation in 90-degree increments (`"lrtb"`, `"tbrl"`, `"btlr"`) to ensure consistent rendering across Word, PowerPoint (which supports only 0°, 90°, and 270°), HTML, and PDF.
+</Note>
+
+## See also
+
+- [`valign()`](/reference/valign) — set vertical alignment
+- [`align()`](/reference/align) — set horizontal text alignment
+- [`height()`](/reference/width-height) — set row height
+- [`hrule()`](/reference/autofit) — control how row heights are interpreted
+- [`dim_pretty()`](/reference/autofit) — compute optimal sizes without applying them

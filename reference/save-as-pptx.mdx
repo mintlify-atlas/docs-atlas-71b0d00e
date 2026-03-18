@@ -1,0 +1,60 @@
+---
+title: save_as_pptx()
+description: Save one or more flextable objects into a PowerPoint (.pptx) file.
+---
+
+`save_as_pptx()` writes one or more flextable objects to a PowerPoint file, placing each table on its own slide. This is a convenience function that wraps the `officer` package. For more control over slide layout and positioning, use the `officer` API directly.
+
+<Note>
+  PowerPoint ignores captions. The caption set by `set_caption()` is not included in PowerPoint output.
+</Note>
+
+## Function signature
+
+```r
+save_as_pptx(..., values = NULL, path)
+```
+
+## Parameters
+
+<ParamField path="..." type="flextable" required>
+  One or more `flextable` objects, optionally named. Named objects use the name as a slide title.
+</ParamField>
+
+<ParamField path="values" type="list">
+  A list of `flextable` objects (optionally named). Named elements are used as slide titles. If supplied, `...` is ignored.
+</ParamField>
+
+<ParamField path="path" type="string" required>
+  Path to the `.pptx` file to create.
+</ParamField>
+
+## Return value
+
+A string containing the full path of the generated file.
+
+## Examples
+
+Save a single table:
+
+```r
+ft <- flextable(head(iris))
+tf <- tempfile(fileext = ".pptx")
+save_as_pptx(ft, path = tf)
+```
+
+Save multiple tables, each on its own slide:
+
+```r
+ft1 <- flextable(head(iris))
+ft2 <- flextable(head(mtcars))
+tf <- tempfile(fileext = ".pptx")
+save_as_pptx(`iris table` = ft1, `mtcars table` = ft2, path = tf)
+```
+
+## See also
+
+- [`save_as_docx()`](/reference/save-as-docx)
+- [`save_as_html()`](/reference/save-as-html)
+- [`save_as_rtf()`](/reference/save-as-rtf)
+- [`save_as_image()`](/reference/save-as-image)

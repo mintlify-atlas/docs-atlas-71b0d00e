@@ -1,0 +1,306 @@
+---
+title: Border functions
+description: Set, remove, and style borders on flextable cells.
+---
+
+flextable provides a family of border functions that let you control cell borders at different levels of granularity — from whole-table borders down to individual cell edges.
+
+## Quick reference
+
+| Function | What it does |
+|---|---|
+| `border_remove(x)` | Remove all borders |
+| `border_outer(x, border, part)` | Set the outer (perimeter) border |
+| `border_inner(x, border, part)` | Set all inner borders (horizontal + vertical) |
+| `border_inner_h(x, border, part)` | Set inner horizontal borders |
+| `border_inner_v(x, border, part)` | Set inner vertical borders |
+| `hline(x, i, j, border, part)` | Set bottom border of selected rows |
+| `hline_top(x, j, border, part)` | Set top border of a table part |
+| `hline_bottom(x, j, border, part)` | Set bottom border of a table part |
+| `vline(x, i, j, border, part)` | Set right border of selected columns |
+| `vline_left(x, i, border, part)` | Set left outer border |
+| `vline_right(x, i, border, part)` | Set right outer border |
+| `surround(x, i, j, border, ...)` | Surround specific cells with borders |
+| `fp_border_default(...)` | Create a default border properties object |
+
+## Border properties
+
+All border functions accept a `border` argument that must be created with `officer::fp_border()` or the convenience wrapper `fp_border_default()`.
+
+```r
+library(officer)
+
+# Default border (thin black solid line)
+border_obj <- fp_border(color = "black", width = 1, style = "solid")
+
+# Convenience wrapper with sensible defaults
+border_obj <- fp_border_default(color = "gray", width = 1)
+```
+
+`fp_border_default()` parameters:
+
+<ParamField path="color" type="string" default='"black"'>
+  Border color as a color name or hex string.
+</ParamField>
+
+<ParamField path="width" type="number" default="1">
+  Border width in points.
+</ParamField>
+
+<ParamField path="style" type="string" default='"solid"'>
+  Border line style. Common values: `"solid"`, `"dashed"`, `"dotted"`.
+</ParamField>
+
+---
+
+## `border_remove()`
+
+Removes all borders from a flextable.
+
+```r
+border_remove(x)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+---
+
+## `border_outer()`
+
+Applies a border to the outer (perimeter) cells of one or all parts.
+
+```r
+border_outer(x, border = NULL, part = "all")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="border" type="fp_border">
+  Border properties from `officer::fp_border()`. If `NULL`, uses the global default border color.
+</ParamField>
+
+<ParamField path="part" type="string" default='"all"'>
+  Which part to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+---
+
+## `border_inner()`, `border_inner_h()`, `border_inner_v()`
+
+Apply borders to the inner cells of the table.
+
+```r
+border_inner(x, border = NULL, part = "all")
+border_inner_h(x, border = NULL, part = "body")
+border_inner_v(x, border = NULL, part = "all")
+```
+
+- `border_inner()` — sets both horizontal and vertical inner borders.
+- `border_inner_h()` — sets only inner horizontal borders (between rows).
+- `border_inner_v()` — sets only inner vertical borders (between columns).
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="border" type="fp_border">
+  Border properties from `officer::fp_border()`. If `NULL`, uses the global default.
+</ParamField>
+
+<ParamField path="part" type="string">
+  Which part to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+---
+
+## `hline()`, `hline_top()`, `hline_bottom()`
+
+Draw horizontal lines at specific rows.
+
+```r
+hline(x, i = NULL, j = NULL, border = NULL, part = "body")
+hline_top(x, j = NULL, border = NULL, part = "body")
+hline_bottom(x, j = NULL, border = NULL, part = "body")
+```
+
+- `hline()` — draws a line **below** each selected row `i`. Sets both the bottom border of row `i` and the top border of row `i + 1` for consistent rendering. When `i = NULL`, applies to every row.
+- `hline_top()` — draws a line at the very **top** of a part (the outer top edge). Does not accept a row selector.
+- `hline_bottom()` — draws a line at the very **bottom** of a part (the outer bottom edge). Does not accept a row selector.
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector (`hline` only). `NULL` targets all rows.
+</ParamField>
+
+<ParamField path="j" type="integer | character">
+  Column selector. `NULL` targets all columns.
+</ParamField>
+
+<ParamField path="border" type="fp_border">
+  Border properties from `officer::fp_border()`. If `NULL`, uses the global default.
+</ParamField>
+
+<ParamField path="part" type="string" default='"body"'>
+  Which part to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+---
+
+## `vline()`, `vline_left()`, `vline_right()`
+
+Draw vertical lines at specific columns.
+
+```r
+vline(x, i = NULL, j = NULL, border = NULL, part = "all")
+vline_left(x, i = NULL, border = NULL, part = "all")
+vline_right(x, i = NULL, border = NULL, part = "all")
+```
+
+- `vline()` — draws a line to the **right** of each selected column `j`. Also sets the left border of column `j + 1`. When `j = NULL`, applies to every column.
+- `vline_left()` — draws a line on the **left outer edge** of the table. Always targets column 1.
+- `vline_right()` — draws a line on the **right outer edge** of the table. Always targets the last column.
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. `NULL` targets all rows.
+</ParamField>
+
+<ParamField path="j" type="integer | character">
+  Column selector (`vline` only). `NULL` targets all columns.
+</ParamField>
+
+<ParamField path="border" type="fp_border">
+  Border properties from `officer::fp_border()`. If `NULL`, uses the global default.
+</ParamField>
+
+<ParamField path="part" type="string" default='"all"'>
+  Which part to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+---
+
+## `surround()`
+
+Draws borders around a specific set of cells.
+
+```r
+surround(
+  x,
+  i = NULL,
+  j = NULL,
+  border = NULL,
+  border.top = NULL,
+  border.bottom = NULL,
+  border.left = NULL,
+  border.right = NULL,
+  part = "body"
+)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector.
+</ParamField>
+
+<ParamField path="j" type="integer | character">
+  Column selector.
+</ParamField>
+
+<ParamField path="border" type="fp_border">
+  Shortcut to set all four edges at once.
+</ParamField>
+
+<ParamField path="border.top" type="fp_border">
+  Top border. Overrides `border` if set.
+</ParamField>
+
+<ParamField path="border.bottom" type="fp_border">
+  Bottom border. Overrides `border` if set.
+</ParamField>
+
+<ParamField path="border.left" type="fp_border">
+  Left border. Overrides `border` if set.
+</ParamField>
+
+<ParamField path="border.right" type="fp_border">
+  Right border. Overrides `border` if set.
+</ParamField>
+
+<ParamField path="part" type="string" default='"body"'>
+  Which part to target: `"body"`, `"header"`, or `"footer"`.
+</ParamField>
+
+---
+
+## Examples
+
+Basic outer/inner border composition:
+
+```r
+library(officer)
+
+big_border <- fp_border(color = "red", width = 2)
+std_border <- fp_border(color = "orange", width = 1)
+
+dat <- iris[c(1:5, 51:55, 101:105), ]
+ft <- flextable(dat)
+ft <- border_remove(x = ft)
+ft <- border_outer(ft, part = "all", border = big_border)
+ft <- border_inner_h(ft, border = std_border)
+ft
+```
+
+Add a horizontal line below specific rows using a formula:
+
+```r
+library(officer)
+
+ft <- flextable(head(iris))
+ft <- border_remove(x = ft)
+ft <- hline(ft, part = "all", border = fp_border(color = "gray"))
+ft
+```
+
+Highlight individual cells with `surround()`:
+
+```r
+library(officer)
+library(flextable)
+
+std_border <- fp_border(color = "orange")
+
+ft <- flextable(head(iris))
+ft <- border_remove(x = ft)
+ft <- border_outer(x = ft, border = std_border)
+
+for (id in 1:3) {
+  ft <- bg(x = ft, i = id, j = id, bg = "yellow")
+  ft <- surround(
+    x = ft, i = id, j = id,
+    border.left = std_border,
+    border.right = std_border,
+    part = "body"
+  )
+}
+
+ft <- autofit(ft)
+ft
+```
+
+## See also
+
+- [`fix_border_issues()`](/reference/border-outer-inner) — fix border rendering inconsistencies
+- [`before()`](/reference/border-outer-inner) — helper to select rows before a summary row

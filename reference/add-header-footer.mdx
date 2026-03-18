@@ -1,0 +1,310 @@
+---
+title: add_header_row() and add_footer_row()
+description: Add, remove, and split header and footer rows in a flextable.
+---
+
+These functions add or remove header and footer rows in a flextable, and provide tools for splitting compound column names into multi-row headers.
+
+## add_header_row()
+
+Add a single row to the header where labels can span multiple columns.
+
+```r
+add_header_row(x, top = TRUE, values = character(0), colwidths = integer(0))
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="top" type="logical" default="TRUE">
+  Insert the row at the top (`TRUE`) or bottom (`FALSE`) of the existing header.
+</ParamField>
+
+<ParamField path="values" type="character | list | paragraph">
+  Labels to add. A character vector, a list, or a call to `as_paragraph()` for formatted content. The number of labels must match the number of span groups defined by `colwidths`.
+</ParamField>
+
+<ParamField path="colwidths" type="integer">
+  Number of columns each label spans. Must sum to the total number of columns. Defaults to one column per label.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(airquality))
+ft <- add_header_row(
+  ft,
+  values = c("Measure", "Time"),
+  colwidths = c(4, 2),
+  top = TRUE
+)
+ft <- theme_box(ft)
+ft
+```
+
+---
+
+## add_header_lines()
+
+Add one or more full-width rows to the header. Each label spans all columns.
+
+```r
+add_header_lines(x, values = character(0), top = TRUE)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="values" type="character | paragraph">
+  A character vector or a call to `as_paragraph()`. Each element becomes a separate full-width row.
+</ParamField>
+
+<ParamField path="top" type="logical" default="TRUE">
+  Insert rows at the top (`TRUE`) or bottom (`FALSE`) of the existing header.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(iris))
+ft <- add_header_lines(ft, values = c("Table title", "Subtitle here"))
+ft <- autofit(ft)
+ft
+```
+
+---
+
+## add_header()
+
+Add a header row where each value maps to a named column. Unlike `add_header_row()`, values fill exactly one column.
+
+```r
+add_header(x, top = TRUE, ..., values = NULL)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="top" type="logical" default="TRUE">
+  Insert the row at the top or bottom of the existing header.
+</ParamField>
+
+<ParamField path="..." type="name-value pairs">
+  Named arguments where names are column keys and values are the labels to insert.
+</ParamField>
+
+<ParamField path="values" type="list">
+  A named list of column key-value pairs. If supplied, `...` is ignored.
+</ParamField>
+
+### Example
+
+```r
+new_row <- list(
+  Sepal.Length = c("min: 4.3", "max: 7.9"),
+  Sepal.Width  = c("min: 2.0", "max: 4.4")
+)
+ft <- flextable(head(iris))
+ft <- add_header(ft, values = new_row, top = FALSE)
+ft <- theme_booktabs(ft, bold_header = TRUE)
+ft
+```
+
+---
+
+## add_footer_row()
+
+Add a single row to the footer where labels can span multiple columns.
+
+```r
+add_footer_row(x, top = TRUE, values = character(0), colwidths = integer(0))
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="top" type="logical" default="TRUE">
+  Insert the row at the top or bottom of the existing footer.
+</ParamField>
+
+<ParamField path="values" type="character | list | paragraph">
+  Labels to add. A character vector, a list, or a call to `as_paragraph()`.
+</ParamField>
+
+<ParamField path="colwidths" type="integer">
+  Number of columns each label spans. Must sum to the total number of columns.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(airquality))
+ft <- add_footer_row(
+  ft,
+  values = c("Source", "Year"),
+  colwidths = c(4, 2),
+  top = TRUE
+)
+ft
+```
+
+---
+
+## add_footer_lines()
+
+Add one or more full-width rows to the footer. Each label spans all columns.
+
+```r
+add_footer_lines(x, values = character(0), top = FALSE)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="values" type="character | paragraph">
+  A character vector or a call to `as_paragraph()`. Each element becomes a separate full-width row.
+</ParamField>
+
+<ParamField path="top" type="logical" default="FALSE">
+  Insert rows at the top (`TRUE`) or bottom (`FALSE`) of the existing footer.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(iris))
+ft <- add_footer_lines(ft, values = c("Source: Fisher, 1936", "n = 6"))
+ft
+```
+
+---
+
+## add_footer()
+
+Add a footer row where each value maps to a named column.
+
+```r
+add_footer(x, top = TRUE, ..., values = NULL)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="top" type="logical" default="TRUE">
+  Insert the row at the top or bottom of the existing footer.
+</ParamField>
+
+<ParamField path="..." type="name-value pairs">
+  Named arguments where names are column keys and values are the labels to insert.
+</ParamField>
+
+<ParamField path="values" type="list">
+  A named list of column key-value pairs. If supplied, `...` is ignored.
+</ParamField>
+
+### Example
+
+```r
+new_row <- as.list(colMeans(iris[, -5]))
+new_row$Species <- "Means"
+
+ft <- flextable(head(iris))
+ft <- add_footer(ft, values = new_row)
+ft
+```
+
+---
+
+## delete_part()
+
+Remove an entire part (header, footer, or body) from a flextable.
+
+```r
+delete_part(x, part = "header")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="part" type="string" default='header'>
+  The part to remove: `"header"`, `"footer"`, or `"body"`.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(iris))
+ft <- delete_part(x = ft, part = "header")
+ft
+```
+
+---
+
+## separate_header()
+
+Split compound column names (e.g., `Sepal.Length` or `Sepal_Length`) into multiple header rows using a separator.
+
+```r
+separate_header(
+  x,
+  opts = c("span-top", "center-hspan", "bottom-vspan", "default-theme"),
+  split = "[_\\.]",
+  fixed = FALSE
+)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object. Must have only one header row when this function is called.
+</ParamField>
+
+<ParamField path="opts" type="character">
+  Optional post-processing operations as a character vector:
+  - `"span-top"` — span empty cells upward with the first non-empty cell, column by column.
+  - `"center-hspan"` — center cells that are horizontally spanned.
+  - `"bottom-vspan"` — align to the bottom cells affected by `"span-top"`.
+  - `"default-theme"` — apply the theme set in `set_flextable_defaults(theme_fun = ...)` to the new header.
+</ParamField>
+
+<ParamField path="split" type="string" default='[_\\\\.]'>
+  A regular expression used to split column names. Default splits on underscores and dots.
+</ParamField>
+
+<ParamField path="fixed" type="logical" default="FALSE">
+  If `TRUE`, treat `split` as a fixed string rather than a regular expression.
+</ParamField>
+
+### Example
+
+```r
+x <- data.frame(
+  Species          = as.factor(c("setosa", "versicolor", "virginica")),
+  Sepal.Length_mean = c(5.006, 5.936, 6.588),
+  Sepal.Length_sd   = c(0.352, 0.516, 0.636),
+  Sepal.Width_mean  = c(3.428, 2.770, 2.974),
+  Sepal.Width_sd    = c(0.379, 0.314, 0.323)
+)
+
+ft <- flextable(x)
+ft <- colformat_double(ft, digits = 2)
+ft <- theme_box(ft)
+ft <- separate_header(x = ft, opts = c("span-top", "bottom-vspan"))
+ft
+```
+
+## Return value
+
+All functions return the modified `flextable` object.
+
+## See also
+
+- [`set_header_labels()`](/reference/set-header-labels) — rename individual column labels
+- [`set_header_df()`](/reference/set-header-labels) — replace the entire header from a data frame
+- [`footnote()`](/reference/footnote) — add footnotes to the footer
+- [`merge_h()`](/reference/merge), [`merge_v()`](/reference/merge) — merge header cells

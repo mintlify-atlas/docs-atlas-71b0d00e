@@ -1,0 +1,58 @@
+---
+title: fontsize()
+description: Set font size on selected rows and columns of a flextable.
+---
+
+`fontsize()` changes the font size (in points) of a selection of cells in a flextable.
+
+## Function signature
+
+```r
+fontsize(x, i = NULL, j = NULL, size = 11, part = "body")
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. Accepts integer indices, a one-sided formula (e.g., `~ col > 5`), or a logical vector. `NULL` selects all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Accepts integer indices, column names, a formula, or a logical vector. `NULL` selects all columns.
+</ParamField>
+
+<ParamField path="size" type="integer" default="11">
+  Font size in points.
+</ParamField>
+
+<ParamField path="part" type="string" default='body'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Set font size for the header and individual columns:
+
+```r
+ft <- flextable(head(iris))
+ft <- fontsize(ft, size = 14, part = "header")
+ft <- fontsize(ft, size = 14, j = 2)
+ft <- fontsize(ft, size = 7, j = 3)
+ft
+```
+
+## See also
+
+- [`font()`](/reference/font) — set font family
+- [`bold()`](/reference/bold)
+- [`color()`](/reference/color)
+- [`style()`](/reference/style) — apply multiple formatting properties at once
+- `set_flextable_defaults(font.size = ...)` — set the default font size for all new tables

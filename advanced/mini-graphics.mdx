@@ -1,0 +1,260 @@
+---
+title: "Mini graphics"
+description: "Embed inline bar charts, range plots, ggplot2 figures, base R plots, and images directly inside flextable cells."
+---
+
+flextable can embed graphics inside cells as chunk objects. Each graphic function returns a chunk that is passed to `as_paragraph()` and then to `compose()` or `mk_par()`.
+
+<Note>
+All graphic chunks require the officedown package in an R Markdown context when the output format is Word. PowerPoint cannot mix images and text in a paragraph — image chunks are silently removed from PowerPoint output.
+</Note>
+
+## Horizontal bar: `minibar()`
+
+`minibar(value, max, barcol, bg, width, height, unit)` draws a simple filled progress bar scaled to a maximum value:
+
+```r
+library(flextable)
+
+ft <- flextable(head(iris, n = 10))
+ft <- compose(ft,
+  j = 1,
+  value = as_paragraph(
+    minibar(value = Sepal.Length, max = max(Sepal.Length))
+  ),
+  part = "body"
+)
+ft <- autofit(ft)
+ft
+```
+
+| Parameter | Default | Description |
+|---|---|---|
+| `value` | required | Numeric vector of bar values. |
+| `max` | `max(value)` | Value that maps to full width. |
+| `barcol` | `"#CCCCCC"` | Bar fill color. |
+| `bg` | `"transparent"` | Background color of the unfilled area. |
+| `width` | `1` | Width of the output image in inches (or `unit`). |
+| `height` | `0.2` | Height of the output image. |
+| `unit` | `"in"` | Unit for width and height: `"in"`, `"cm"`, or `"mm"`. |
+
+You can mix a minibar with text in the same cell:
+
+```r
+ft <- flextable(airquality[sample.int(150, size = 10), ])
+ft <- compose(ft,
+  j = "Wind",
+  value = as_paragraph(
+    as_chunk(Wind, props = fp_text_default(color = "orange")),
+    " ",
+    minibar(
+      value = Wind,
+      max = max(airquality$Wind),
+      barcol = "orange",
+      bg = "black",
+      height = .15
+    )
+  ),
+  part = "body"
+)
+ft <- autofit(ft)
+ft
+```
+
+## Range plot: `linerange()`
+
+`linerange(value, min, max, rangecol, stickcol, bg, width, height, raster_width, unit)` draws a line with end-stops and a vertical marker at the value's position:
+
+```r
+myft <- flextable(head(iris, n = 10))
+myft <- compose(myft,
+  j = 1,
+  value = as_paragraph(
+    linerange(value = Sepal.Length)
+  ),
+  part = "body"
+)
+autofit(myft)
+```
+
+| Parameter | Default | Description |
+|---|---|---|
+| `value` | required | Numeric vector of positions to mark. |
+| `min` | `min(value)` | Left end of the range axis. |
+| `max` | `max(value)` | Right end of the range axis. |
+| `rangecol` | `"#CCCCCC"` | Color of the range line and end-stops. |
+| `stickcol` | `"#FF0000"` | Color of the position marker. |
+| `bg` | `"transparent"` | Background. |
+| `width` | `1` | Output image width. |
+| `height` | `0.2` | Output image height. |
+| `raster_width` | `30` | Number of pixels used when interpolating the position. |
+| `unit` | `"in"` | Unit for width and height. |
+
+## ggplot2 plots: `gg_chunk()`
+
+`gg_chunk(value, width, height, unit, res)` renders a ggplot2 object stored in a list column as a PNG and embeds it:
+
+```r
+library(data.table)
+library(flextable)
+if (require("ggplot2")) {
+  my_cor_plot <- function(x) {
+    cols <- colnames(x)[sapply(x, is.numeric)]
+    x <- x[, .SD, .SDcols = cols]
+    cormat <- as.data.table(cor(x))
+    cormat$var1 <- colnames(cormat)
+    cormat <- melt(cormat,
+      id.vars = "var1", measure.vars = cormat$var1,
+      variable.name = "var2", value.name = "correlation"
+    )
+    ggplot(data = cormat, aes(x = var1, y = var2, fill = correlation)) +
+      geom_tile() +
+      coord_equal() +
+      scale_fill_gradient2(
+        low = "blue", mid = "white", high = "red",
+        limits = c(-1, 1), guide = "none"
+      ) +
+      theme_void()
+  }
+  z <- as.data.table(iris)
+  z <- z[, list(gg = list(my_cor_plot(.SD))), by = "Species"]
+  ft <- flextable(z)
+  ft <- mk_par(ft,
+    j = "gg",
+    value = as_paragraph(
+      gg_chunk(value = gg, width = 1, height = 1)
+    )
+  )
+  ft
+}
+```
+
+| Parameter | Default | Description |
+|---|---|---|
+| `value` | required | List column of ggplot2 objects. |
+| `width` | `1` | Output image width. |
+| `height` | `0.2` | Output image height. |
+| `unit` | `"in"` | Unit for width and height. |
+| `res` | `300` | PNG resolution in ppi. |
+
+## Base R plots: `plot_chunk()`
+
+`plot_chunk(value, width, height, type, free_scale, unit, ...)` renders a list column of numeric vectors as small base R plots:
+
+```r
+library(data.table)
+library(flextable)
+
+z <- as.data.table(iris)
+z <- z[, list(
+  Sepal.Length = mean(Sepal.Length, na.rm = TRUE),
+  z = list(.SD$Sepal.Length)
+), by = "Species"]
+
+ft <- flextable(z, col_keys = c("Species", "Sepal.Length", "box", "density"))
+ft <- mk_par(ft, j = "box", value = as_paragraph(
+  plot_chunk(
+    value = z, type = "box",
+    border = "red", col = "transparent"
+  )
+))
+ft <- mk_par(ft, j = "density", value = as_paragraph(
+  plot_chunk(value = z, type = "dens", col = "red")
+))
+ft <- set_table_properties(ft, layout = "autofit", width = .6)
+ft <- set_header_labels(ft, box = "boxplot", density = "density")
+theme_vanilla(ft)
+```
+
+`type` accepts `"box"`, `"line"`, `"points"`, or `"density"`. Additional `...` arguments are forwarded to the underlying base R plot function.
+
+## Grid graphics: `grid_chunk()`
+
+`grid_chunk(value, width, height, unit, res)` embeds grid graphical objects (grobs):
+
+```r
+library(flextable)
+ft <- flextable(head(cars))
+if (require("grid")) {
+  ft <- prepend_chunks(
+    x = ft, i = 2, j = 2,
+    grid_chunk(
+      list(
+        circleGrob(gp = gpar(
+          fill = "#ec11c2",
+          col = "transparent"
+        ))
+      ),
+      width = .15, height = .15
+    )
+  )
+}
+ft
+```
+
+## Embedding images: `as_image()`
+
+`as_image(src, width, height, unit, guess_size)` reads an image file and embeds it as a chunk:
+
+```r
+img.file <- file.path(
+  R.home("doc"),
+  "html", "logo.jpg"
+)
+if (require("magick")) {
+  myft <- flextable(head(iris))
+  myft <- compose(myft,
+    i = 1:3, j = 1,
+    value = as_paragraph(
+      as_image(src = img.file),
+      " ",
+      as_chunk(Sepal.Length,
+        props = fp_text_default(color = "red")
+      )
+    ),
+    part = "body"
+  )
+  ft <- autofit(myft)
+  ft
+}
+```
+
+When `guess_size = TRUE` (the default) and magick is installed, flextable reads the image dimensions automatically so you don't need to specify `width` and `height`.
+
+<Tip>
+For tables with many images, set `guess_size = FALSE` and supply explicit `width` and `height` values to avoid re-reading every image file during rendering.
+</Tip>
+
+## Row height
+
+Mini graphics expand the rendered PNG to the cell, but the row must be tall enough to display them. Use `height()` to set explicit row heights, or `autofit()` after composing to let flextable adjust automatically:
+
+```r
+# Explicit row height for a 0.5-inch graphic
+ft <- height(ft, height = 0.5)
+
+# Or let autofit handle it
+ft <- autofit(ft)
+```
+
+## Output format considerations
+
+<Tabs>
+  <Tab title="Word">
+    - Graphic chunks require the officedown package.
+    - Images and text can coexist in the same paragraph.
+    - Use `width` and `height` values that match the physical size you want in the printed document.
+  </Tab>
+  <Tab title="HTML">
+    - Graphics render as inline `<img>` tags with inline CSS dimensions.
+    - Transparent backgrounds blend with cell background colors.
+    - Scrollable tables (`scroll` option in defaults) work correctly with graphic chunks.
+  </Tab>
+  <Tab title="PDF">
+    - Graphics are saved as PNG files and referenced with `\includegraphics` in LaTeX.
+    - Use `fonts_ignore = TRUE` in `set_flextable_defaults()` when using pdflatex instead of xelatex/lualatex.
+  </Tab>
+  <Tab title="PowerPoint">
+    Images are removed from PowerPoint output because PowerPoint cannot mix images and text within a single shape paragraph.
+  </Tab>
+</Tabs>

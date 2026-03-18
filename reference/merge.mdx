@@ -1,0 +1,216 @@
+---
+title: Merge functions
+description: Merge cells horizontally or vertically in a flextable.
+---
+
+flextable provides several functions to merge adjacent cells. Merged cells display only the content of the first cell in the merged range.
+
+## Quick reference
+
+| Function | What it does |
+|---|---|
+| `merge_h(x, i, part)` | Merge identical adjacent cells horizontally |
+| `merge_v(x, j, part)` | Merge identical adjacent cells vertically |
+| `merge_at(x, i, j, part)` | Merge a specific rectangular range |
+| `merge_h_range(x, i, j1, j2, part)` | Merge a column range for selected rows |
+| `merge_none(x)` | Remove all merges |
+
+<Note>
+  `"all"` is not a valid value for `part` in merge functions.
+</Note>
+
+---
+
+## `merge_h()`
+
+Merges consecutive cells in the same row that have identical formatted values.
+
+```r
+merge_h(x, i = NULL, part = "body")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. `NULL` processes all rows.
+</ParamField>
+
+<ParamField path="part" type="string" default='"body"'>
+  Which part to process: `"body"`, `"header"`, or `"footer"`.
+</ParamField>
+
+### Example
+
+```r
+library(flextable)
+
+schedule <- data.frame(
+  time = c("9h", "10h", "11h", "14h", "15h", "16h"),
+  monday    = c("Math", "Math", "French", "History", "Science", "French"),
+  tuesday   = c("English", "Math", "Art", "Math", "Math", "French"),
+  wednesday = c("Science", "Math", "Science", "English", "English", "French"),
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable(schedule)
+ft <- theme_box(ft)
+ft <- merge_h(ft)
+ft
+```
+
+---
+
+## `merge_v()`
+
+Merges consecutive cells in the same column that have identical formatted values.
+
+```r
+merge_v(x, j = NULL, target = NULL, part = "body", combine = FALSE)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="j" type="integer | character">
+  Column selector that controls which columns are inspected for consecutive identical values.
+</ParamField>
+
+<ParamField path="target" type="character">
+  Column names where the merge should actually be applied. Useful when you want to trigger a merge based on one column's values but apply it to additional columns. If `NULL`, defaults to the columns selected by `j`.
+</ParamField>
+
+<ParamField path="part" type="string" default='"body"'>
+  Which part to process: `"body"`, `"header"`, or `"footer"`.
+</ParamField>
+
+<ParamField path="combine" type="logical" default="FALSE">
+  If `TRUE`, the columns in `j` are combined into a single composite key before checking for consecutive identical values. If `FALSE`, each column is inspected independently.
+</ParamField>
+
+### Example
+
+Merge vertically on two columns:
+
+```r
+ft <- flextable(mtcars)
+ft <- merge_v(ft, j = c("gear", "carb"))
+ft
+```
+
+Merge based on one column but apply the span to additional target columns:
+
+```r
+ft <- flextable(data_ex)
+ft <- theme_box(ft)
+ft <- merge_v(ft,
+  j = "srdr_id",
+  target = c("srdr_id", "substances")
+)
+ft
+```
+
+---
+
+## `merge_at()`
+
+Merges all cells in a specified rectangular range into a single cell. All selected rows and columns must be consecutive.
+
+```r
+merge_at(x, i = NULL, j = NULL, part = "body")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector.
+</ParamField>
+
+<ParamField path="j" type="integer | character">
+  Column selector.
+</ParamField>
+
+<ParamField path="part" type="string" default='"body"'>
+  Which part to process: `"body"`, `"header"`, or `"footer"`.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(mtcars), cwidth = .5)
+ft <- merge_at(ft, i = 1:2, j = 1:2)
+ft
+```
+
+---
+
+## `merge_h_range()`
+
+Merges a consecutive range of columns into a single cell for each selected row. Both `j1` and `j2` must define consecutive columns.
+
+```r
+merge_h_range(x, i = NULL, j1 = NULL, j2 = NULL, part = "body")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector.
+</ParamField>
+
+<ParamField path="j1" type="integer | character">
+  The first (leftmost) column of the merge range.
+</ParamField>
+
+<ParamField path="j2" type="integer | character">
+  The last (rightmost) column of the merge range.
+</ParamField>
+
+<ParamField path="part" type="string" default='"body"'>
+  Which part to process: `"body"`, `"header"`, or `"footer"`.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(mtcars), cwidth = .5)
+ft <- theme_box(ft)
+ft <- merge_h_range(ft, i = ~ cyl == 6, j1 = "am", j2 = "carb")
+ft <- align(ft, i = ~ cyl == 6, align = "center")
+ft
+```
+
+---
+
+## `merge_none()`
+
+Removes all cell merging information from a flextable, restoring each cell to independent display.
+
+```r
+merge_none(x)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(iris))
+ft <- set_header_df(ft, mapping = typology, key = "col_keys")
+ft <- merge_v(ft, j = c("Species"))
+ft <- theme_tron_legacy(merge_none(ft))
+ft
+```
+
+## See also
+
+- [`valign()`](/reference/valign) — set vertical alignment within merged cells
+- [`align()`](/reference/align) — set horizontal alignment

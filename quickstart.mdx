@@ -1,80 +1,213 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Create your first flextable and export it to Word or HTML in minutes."
 ---
 
-## Get started in three steps
+This guide walks you through creating a basic table, applying a theme, formatting cells, and saving your output — all using real flextable functions.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Make sure flextable is installed before you begin. If you haven't installed it yet, see the [installation guide](/installation).
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+```r
+library(flextable)
+```
 
-### Step 2: Deploy your changes
+## Create a basic table
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+Pass any `data.frame` to `flextable()`. The function creates a table with a header, body, and (empty) footer.
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+```r
+ft <- flextable(head(airquality))
+ft
+```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+By default, `flextable()` applies the `theme_booktabs` theme — horizontal rules above and below the header and at the bottom of the body, with text columns left-aligned and numeric columns right-aligned.
 
-### Step 3: Go live
+<Tip>
+Use `head()` or a small slice of your data while iterating, then swap in the full dataset when you are ready to export.
+</Tip>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+## Apply a theme
+
+Themes apply a consistent set of borders, colors, and text styles in one call. Apply a theme **after** you have added all header and footer rows, because themes only format elements that exist at the time they are called.
+
+<CodeGroup>
+
+```r theme_vanilla
+ft <- flextable(head(airquality)) |>
+  theme_vanilla()
+ft
+```
+
+```r theme_booktabs
+ft <- flextable(head(airquality)) |>
+  theme_booktabs()
+ft
+```
+
+```r theme_zebra
+ft <- flextable(head(airquality)) |>
+  theme_zebra()
+ft
+```
+
+```r theme_box
+ft <- flextable(head(airquality)) |>
+  theme_box()
+ft
+```
+
+</CodeGroup>
+
+| Theme | Description |
+|---|---|
+| `theme_vanilla()` | Thick outer horizontal rules, thin inner rules, bold header |
+| `theme_booktabs()` | LaTeX-style booktabs rules, no vertical lines (default) |
+| `theme_box()` | Full grid with outer and inner borders |
+| `theme_zebra()` | Alternating row background colors |
+| `theme_borderless()` | No borders at all, bold header |
+| `theme_apa()` | American Psychological Association style, Times New Roman |
+
+## Format cells
+
+Chain formatting verbs with the pipe operator. Each function accepts `i` (row selector) and `j` (column selector) arguments to target specific cells.
+
+<Steps>
+  <Step title="Bold the header">
+    ```r
+    ft <- flextable(head(mtcars)) |>
+      bold(part = "header")
+    ```
+  </Step>
+  <Step title="Change header text color">
+    ```r
+    ft <- flextable(head(mtcars)) |>
+      bold(part = "header") |>
+      color(color = "#2B5797", part = "header")
+    ```
+  </Step>
+  <Step title="Highlight specific cells">
+    ```r
+    ft <- flextable(head(mtcars)) |>
+      bold(part = "header") |>
+      color(color = "#2B5797", part = "header") |>
+      highlight(i = ~ mpg < 22, j = "mpg", color = "#ffe842")
+    ```
+
+    The `~` formula in `i` filters rows using the data's column names — here, rows where `mpg` is less than 22.
+  </Step>
+  <Step title="Fit column widths automatically">
+    ```r
+    ft <- flextable(head(mtcars)) |>
+      bold(part = "header") |>
+      color(color = "#2B5797", part = "header") |>
+      highlight(i = ~ mpg < 22, j = "mpg", color = "#ffe842") |>
+      autofit()
+    ```
+
+    `autofit()` adjusts each column's width to fit its content.
+  </Step>
+</Steps>
+
+## Add a footer line
+
+Use `add_footer_lines()` to append a note below the table body.
+
+```r
+ft <- flextable(head(mtcars)) |>
+  theme_vanilla() |>
+  add_footer_lines("Source: Motor Trend, 1974") |>
+  autofit()
+```
+
+## Save to Word
+
+`save_as_docx()` writes one or more flextable objects to a `.docx` file.
+
+```r
+ft <- flextable(head(mtcars)) |>
+  theme_vanilla() |>
+  autofit()
+
+save_as_docx(ft, path = "my_table.docx")
+```
+
+To save multiple tables in one document, pass them as named arguments — the names become section headings:
+
+```r
+ft1 <- flextable(head(iris)) |> theme_vanilla() |> autofit()
+ft2 <- flextable(head(mtcars)) |> theme_vanilla() |> autofit()
+
+save_as_docx(
+  `Iris data` = ft1,
+  `Motor Trend data` = ft2,
+  path = "tables.docx"
+)
+```
+
+## Save to HTML
+
+`save_as_html()` produces a self-contained HTML file. This is useful for sharing tables outside of an R Markdown workflow.
+
+```r
+ft <- flextable(head(iris)) |>
+  theme_vanilla() |>
+  autofit()
+
+save_as_html(ft, path = "my_table.html")
+```
+
+Like `save_as_docx()`, you can pass multiple named tables:
+
+```r
+save_as_html(
+  `Iris data` = ft1,
+  `Motor Trend data` = ft2,
+  path = "tables.html",
+  title = "My Tables"
+)
+```
+
+<Note>
+`save_as_html()` requires pandoc to be available. If you are working inside R Markdown or Quarto, the table is rendered automatically — no need to call `save_as_html()` explicitly.
+</Note>
+
+## Put it all together
+
+Here is a complete example combining everything above:
+
+```r
+library(flextable)
+
+ft <- flextable(head(mtcars)) |>
+  theme_vanilla() |>
+  bold(part = "header") |>
+  color(color = "#2B5797", part = "header") |>
+  highlight(i = ~ mpg < 22, j = "mpg", color = "#ffe842") |>
+  add_footer_lines("Source: Motor Trend, 1974") |>
+  autofit()
+
+# Save to Word
+save_as_docx(ft, path = "mtcars_table.docx")
+
+# Save to HTML
+save_as_html(ft, path = "mtcars_table.html")
+```
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Table structure" icon="table" href="/concepts/table-structure">
+    Learn about header, body, and footer parts and how selectors work
+  </Card>
+  <Card title="Text formatting" icon="bold" href="/formatting/text-formatting">
+    Explore bold, italic, color, font size, and highlight functions
+  </Card>
+  <Card title="Themes" icon="palette" href="/formatting/themes">
+    See all available themes with visual examples
+  </Card>
+  <Card title="Export & output" icon="file-export" href="/output/word-powerpoint">
+    Save tables to Word, PowerPoint, PDF, and images
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

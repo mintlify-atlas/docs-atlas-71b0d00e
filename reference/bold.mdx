@@ -1,0 +1,63 @@
+---
+title: bold()
+description: Set bold font weight on selected rows and columns of a flextable.
+---
+
+`bold()` changes the font weight of a selection of cells in a flextable.
+
+## Function signature
+
+```r
+bold(x, i = NULL, j = NULL, bold = TRUE, part = "body")
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. Accepts integer indices, a one-sided formula (e.g., `~ col > 5`), or a logical vector. `NULL` selects all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Accepts integer indices, column names, a formula, or a logical vector. `NULL` selects all columns.
+</ParamField>
+
+<ParamField path="bold" type="logical" default="TRUE">
+  `TRUE` to apply bold, `FALSE` to remove it.
+</ParamField>
+
+<ParamField path="part" type="string" default='body'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Make the header row bold:
+
+```r
+ft <- flextable(head(iris))
+ft <- bold(ft, bold = TRUE, part = "header")
+ft
+```
+
+Make a specific column bold using a formula row selector:
+
+```r
+ft <- flextable(head(mtcars))
+ft <- bold(ft, i = ~ cyl > 4, j = "cyl")
+ft
+```
+
+## See also
+
+- [`italic()`](/reference/italic)
+- [`fontsize()`](/reference/fontsize)
+- [`color()`](/reference/color)
+- [`style()`](/reference/style) — apply multiple formatting properties at once

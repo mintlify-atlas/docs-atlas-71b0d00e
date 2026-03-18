@@ -1,0 +1,73 @@
+---
+title: highlight()
+description: Set text highlight (background) color on selected rows and columns of a flextable.
+---
+
+`highlight()` changes the text highlight color of a selection of cells in a flextable. This sets the background color of the text characters themselves (not the cell background). You can supply a fixed color string or a function that derives colors from column values.
+
+## Function signature
+
+```r
+highlight(x, i = NULL, j = NULL, color = "yellow", part = "body", source = j)
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. Accepts integer indices, a one-sided formula (e.g., `~ col > 5`), or a logical vector. `NULL` selects all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Accepts integer indices, column names, a formula, or a logical vector. `NULL` selects all columns.
+</ParamField>
+
+<ParamField path="color" type="string | function" default='yellow'>
+  A CSS-compatible color string (e.g., `"yellow"`, `"#FFFF00"`) or a function that accepts a vector of data values and returns a character vector of color strings.
+</ParamField>
+
+<ParamField path="part" type="string" default='body'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+<ParamField path="source" type="integer | character | formula" default="j">
+  When `color` is a function, `source` specifies which dataset column(s) are passed as input to the function. This allows highlighting cells in `j` based on values from a different (possibly hidden) column. Defaults to `j`.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Highlight cells where a condition is met:
+
+```r
+ft <- flextable(head(mtcars, n = 10))
+ft <- highlight(ft, j = "disp", i = ~ disp > 200, color = "yellow")
+ft
+```
+
+Apply a color scale based on quantiles:
+
+```r
+my_color_fun <- function(x) {
+  out <- rep("yellow", length(x))
+  out[x < quantile(x, .75)] <- "pink"
+  out[x < quantile(x, .50)] <- "wheat"
+  out[x < quantile(x, .25)] <- "gray90"
+  out
+}
+ft <- flextable(head(mtcars, n = 10))
+ft <- highlight(ft, j = ~ drat + wt + qsec, color = my_color_fun)
+ft
+```
+
+## See also
+
+- [`color()`](/reference/color) — set text foreground color
+- [`bg()`](/reference/bg) — set cell background color
+- [`style()`](/reference/style) — apply multiple formatting properties at once

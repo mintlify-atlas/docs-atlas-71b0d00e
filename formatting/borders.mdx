@@ -1,0 +1,289 @@
+---
+title: "Borders"
+description: "Add, remove, and customize borders in a flextable using the full set of border functions."
+---
+
+flextable separates border control into high-level helpers for common patterns and lower-level functions for precise placement. All border styling requires an `officer::fp_border()` object to describe the line's appearance.
+
+## Defining a border style with `fp_border()`
+
+`fp_border()` from the officer package describes a single border line:
+
+```r
+library(officer)
+
+# Thin black border (1 pt)
+thin <- fp_border(color = "black", width = 1, style = "solid")
+
+# Thick red border (2 pt)
+thick_red <- fp_border(color = "red", width = 2)
+
+# No border (zero width)
+none <- fp_border(width = 0)
+```
+
+`fp_border_default()` returns a border using the current flextable defaults:
+
+```r
+std <- fp_border_default()          # uses set_flextable_defaults() values
+std2 <- fp_border_default(width = 2) # override width only
+```
+
+## Removing all borders
+
+`border_remove()` sets every border in the table to zero width, across all parts:
+
+```r
+ft <- flextable(head(iris))
+ft <- theme_box(ft)      # apply a style that adds many borders
+ft <- border_remove(ft)  # strip them all
+ft
+```
+
+This is frequently used as the first step when building a custom border scheme from scratch.
+
+## Table-level border helpers
+
+These functions apply borders to whole structural regions of the table.
+
+### Outer borders
+
+`border_outer()` frames the outside edge of one or all parts:
+
+```r
+library(officer)
+
+big_border <- fp_border(color = "red", width = 2)
+
+ft <- flextable(head(iris))
+ft <- border_remove(ft)
+ft <- border_outer(ft, part = "all", border = big_border)
+ft
+```
+
+### Inner horizontal borders
+
+`border_inner_h()` draws a horizontal line between every pair of adjacent rows:
+
+```r
+std_border <- fp_border(color = "orange", width = 1)
+
+ft <- flextable(head(iris))
+ft <- border_remove(ft)
+ft <- border_inner_h(ft, border = std_border)
+ft
+```
+
+### Inner vertical borders
+
+`border_inner_v()` draws a vertical line between every pair of adjacent columns:
+
+```r
+std_border <- fp_border(color = "orange", width = 1)
+
+ft <- flextable(head(iris))
+ft <- border_remove(ft)
+ft <- border_inner_v(ft, border = std_border)
+ft
+```
+
+### All inner borders
+
+`border_inner()` applies both horizontal and vertical inner borders in one call:
+
+```r
+std_border <- fp_border(color = "orange", width = 1)
+
+ft <- flextable(head(iris))
+ft <- border_remove(ft)
+ft <- border_inner(ft, border = std_border)
+ft
+```
+
+## Row-level horizontal lines
+
+### `hline()` — horizontal line below selected rows
+
+`hline()` draws a line below each selected row `i`. It sets both the bottom border of row `i` and the top border of row `i + 1` to ensure consistent rendering:
+
+```r
+std_border <- fp_border(color = "gray")
+
+ft <- flextable(head(iris))
+ft <- border_remove(ft)
+ft <- hline(ft, part = "all", border = std_border)
+ft
+```
+
+Target specific rows with the `i` selector:
+
+```r
+library(officer)
+
+dat <- data.frame(
+  Level = c("setosa", "versicolor", "virginica", "<NA>", "Total"),
+  Freq  = as.integer(c(50, 50, 50, 0, 150))
+)
+
+ft <- flextable(dat)
+ft <- hline(
+  ft,
+  i = ~ before(Level, "Total"),
+  border = fp_border_default(width = 2)
+)
+ft
+```
+
+`before(x, entries)` returns a logical vector marking the rows immediately before the first occurrence of any of `entries` — a convenient way to insert a separator above a totals row.
+
+### `hline_top()` — top border of a part
+
+`hline_top()` draws a line at the very top of a table part:
+
+```r
+big_border <- fp_border(color = "orange", width = 3)
+
+ft <- flextable(head(iris))
+ft <- border_remove(ft)
+ft <- hline_top(ft, part = "all", border = big_border)
+ft
+```
+
+### `hline_bottom()` — bottom border of a part
+
+`hline_bottom()` draws a line at the very bottom of a table part:
+
+```r
+big_border <- fp_border(color = "orange", width = 3)
+
+ft <- flextable(head(iris))
+ft <- border_remove(ft)
+ft <- hline_bottom(ft, part = "body", border = big_border)
+ft
+```
+
+## Column-level vertical lines
+
+### `vline()` — vertical line to the right of selected columns
+
+`vline()` draws a line to the right of each selected column `j`. It sets the right border of column `j` and the left border of column `j + 1`:
+
+```r
+std_border <- fp_border(color = "orange")
+
+ft <- flextable(head(iris))
+ft <- border_remove(ft)
+ft <- vline(ft, border = std_border)
+ft
+```
+
+### `vline_left()` and `vline_right()` — outer vertical edges
+
+```r
+std_border <- fp_border(color = "orange")
+
+ft <- flextable(head(iris))
+ft <- border_remove(ft)
+ft <- vline_left(ft, border = std_border)
+ft <- vline_right(ft, border = std_border)
+ft
+```
+
+## Highlighting individual cells with `surround()`
+
+`surround()` draws borders around specific cells without affecting the rest of the table:
+
+```r
+std_border <- fp_border(color = "orange")
+
+ft <- flextable(head(iris))
+ft <- border_remove(ft)
+ft <- border_outer(ft, border = std_border)
+
+for (id in 1:3) {
+  ft <- bg(ft, i = id, j = id, bg = "yellow")
+  ft <- surround(
+    ft,
+    i = id, j = id,
+    border.left  = std_border,
+    border.right = std_border,
+    part = "body"
+  )
+}
+
+ft <- autofit(ft)
+ft
+```
+
+## Fixing border rendering issues
+
+`fix_border_issues()` corrects a rendering artifact where adjacent cells from different table parts display doubled or mismatched borders in some output formats:
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_vanilla(ft)
+ft <- fix_border_issues(ft)
+ft
+```
+
+All built-in theme functions call `fix_border_issues()` automatically. Call it explicitly only when you build a border scheme manually.
+
+## Building a custom border scheme
+
+<Steps>
+  <Step title="Remove all existing borders">
+    ```r
+    library(officer)
+    library(flextable)
+
+    ft <- flextable(head(mtcars))
+    ft <- border_remove(ft)
+    ```
+  </Step>
+
+  <Step title="Define border styles">
+    ```r
+    thick <- fp_border(color = "black", width = 2)
+    thin  <- fp_border(color = "black", width = 0.5)
+    ```
+  </Step>
+
+  <Step title="Apply outer and inner borders">
+    ```r
+    ft <- border_outer(ft, border = thick, part = "all")
+    ft <- border_inner_h(ft, border = thin, part = "all")
+    ft <- border_inner_v(ft, border = thin, part = "all")
+    ```
+  </Step>
+
+  <Step title="Emphasize the header bottom">
+    ```r
+    ft <- hline_bottom(ft, border = thick, part = "header")
+    ```
+  </Step>
+
+  <Step title="Fix any rendering artifacts">
+    ```r
+    ft <- fix_border_issues(ft)
+    ft
+    ```
+  </Step>
+</Steps>
+
+## Quick reference
+
+| Function | What it does |
+|---|---|
+| `border_remove(x)` | Remove all borders from all parts |
+| `border_outer(x, border, part)` | Set outer (perimeter) borders of a part |
+| `border_inner_h(x, border, part)` | Set inner horizontal borders |
+| `border_inner_v(x, border, part)` | Set inner vertical borders |
+| `border_inner(x, border, part)` | Set all inner borders |
+| `hline(x, i, border, part)` | Horizontal line below selected rows |
+| `hline_top(x, border, part)` | Top border of a part |
+| `hline_bottom(x, border, part)` | Bottom border of a part |
+| `vline(x, j, border, part)` | Vertical line to the right of selected columns |
+| `vline_left(x, border, part)` | Left edge of the table |
+| `vline_right(x, border, part)` | Right edge of the table |
+| `surround(x, i, j, border.*, part)` | Borders around individual cells |
+| `fix_border_issues(x)` | Correct rendering artifacts at part boundaries |

@@ -1,0 +1,195 @@
+---
+title: "Themes"
+description: "Apply built-in themes to a flextable and set a default theme for all new tables."
+---
+
+Themes apply a consistent set of borders, background colors, text styles, and alignment rules to a flextable in a single function call. flextable ships with several built-in themes covering everything from minimal academic styles to dark-mode designs.
+
+## How themes work
+
+<Warning>
+Theme functions are **not** like ggplot2 themes. They apply formatting to the table **immediately** at the time they are called, not dynamically as elements are added later.
+
+Apply a theme **after** all rows, headers, and footers have been added. Any rows or columns added after the theme call will not inherit the theme's formatting.
+</Warning>
+
+```r
+library(flextable)
+
+# Correct: add all structure first, then apply the theme
+ft <- flextable(head(airquality))
+ft <- add_footer_lines(ft, "Source: NYDEC")
+ft <- theme_vanilla(ft)
+ft
+```
+
+## Available themes
+
+### `theme_vanilla()` — clean with horizontal rules
+
+External horizontal lines are 2 pts thick; inner horizontal lines are 0.5 pt. Header text is bold. Text columns are left-aligned; numeric columns are right-aligned.
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_vanilla(ft)
+ft
+```
+
+### `theme_booktabs()` — LaTeX booktabs style
+
+Top and bottom lines of the header and body are 2 pts thick; inner header lines are 0.5 pt. No vertical rules. Matches the LaTeX `booktabs` package aesthetic.
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_booktabs(ft)
+ft
+```
+
+Pass `bold_header = TRUE` to bold the header row:
+
+```r
+ft <- theme_booktabs(ft, bold_header = TRUE)
+```
+
+### `theme_box()` — full grid
+
+A complete grid with borders on every cell edge, inner and outer. Header is bold; footer is italic.
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_box(ft)
+ft
+```
+
+### `theme_borderless()` — no borders
+
+All borders are removed. Header text is bold. Text columns are left-aligned; numeric columns are right-aligned.
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_borderless(ft)
+ft
+```
+
+### `theme_zebra()` — alternating row colors
+
+Alternating background colors in the header and body. Default colors are `#CFCFCF` for odd header rows and `#EFEFEF` for odd body rows; even rows are transparent.
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_zebra(ft)
+ft
+```
+
+Customize the four colors:
+
+```r
+ft <- theme_zebra(
+  ft,
+  odd_header  = "#4472C4",
+  odd_body    = "#D9E1F2",
+  even_header = "#2E75B6",
+  even_body   = "transparent"
+)
+```
+
+### `theme_alafoli()` — minimal with gray text
+
+No background color. All text is `#666666`. No bold or italic. A single horizontal rule below the header. Compact 3 pt padding.
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_alafoli(ft)
+ft
+```
+
+### `theme_apa()` — APA style
+
+APA (American Psychological Association) style: Times New Roman font, double line spacing, horizontal rules at top, below the header, and at the bottom of the body, centered alignment, and numbers formatted to 2 decimal places.
+
+```r
+ft <- flextable(head(mtcars * 22.22))
+ft <- theme_apa(ft)
+ft
+```
+
+### `theme_tron()` and `theme_tron_legacy()` — dark themes
+
+Both use a dark background. Header text is orange/amber; body text is cyan/yellow. All borders are teal/blue.
+
+<Tabs>
+  <Tab title="theme_tron">
+    ```r
+    ft <- flextable(head(airquality))
+    ft <- theme_tron(ft)
+    ft
+    ```
+  </Tab>
+  <Tab title="theme_tron_legacy">
+    ```r
+    ft <- flextable(head(airquality))
+    ft <- theme_tron_legacy(ft)
+    ft
+    ```
+  </Tab>
+</Tabs>
+
+| Theme | Background | Header color | Body color | Border color |
+|---|---|---|---|---|
+| `theme_tron` | `#000000` | `#ec9346` | `#a4cee5` | `#a4cee5` |
+| `theme_tron_legacy` | `#0C141F` | `#DF740C` | `#FFE64D` | `#6FC3DF` |
+
+### `theme_vader()` — dark with red accents
+
+Dark `#242424` background, light `#dfdfdf` text. A thick red (`#ff0000`) horizontal rule separates the header from the body.
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_vader(ft)
+ft
+```
+
+## Setting a default theme
+
+Use `set_flextable_defaults()` to apply a theme automatically to every new flextable created in the session:
+
+```r
+set_flextable_defaults(theme_fun = theme_booktabs)
+
+# All subsequent flextable() calls will apply theme_booktabs automatically
+ft1 <- flextable(head(iris))
+ft2 <- flextable(head(mtcars))
+```
+
+`theme_fun` is called as the **last** instruction inside `flextable()`. This means headers and footers added after the `flextable()` call are **not** formatted by the default theme.
+
+To apply a theme after headers and footers have been added, use the `post_process_html` (or `post_process_docx`, `post_process_pptx`, `post_process_pdf`) argument instead:
+
+```r
+set_flextable_defaults(
+  post_process_html = function(ft) {
+    theme_vanilla(ft)
+  }
+)
+```
+
+The post-process function runs just before printing, so it sees the fully constructed table including any headers or footers added after `flextable()`.
+
+<Note>
+Be careful that post-process themes do not override formatting you applied explicitly before printing.
+</Note>
+
+## Theme summary
+
+| Theme | Borders | Background | Header style |
+|---|---|---|---|
+| `theme_vanilla` | Horizontal only | None | Bold |
+| `theme_booktabs` | Top / mid / bottom | None | Optional bold |
+| `theme_box` | Full grid | None | Bold |
+| `theme_borderless` | None | None | Bold |
+| `theme_zebra` | None | Alternating | Bold |
+| `theme_alafoli` | Header bottom only | None | Gray text |
+| `theme_apa` | Top, header bottom, body bottom | None | Centered |
+| `theme_tron` | Full grid (teal) | Black | Orange, bold |
+| `theme_tron_legacy` | Full grid (teal) | Dark navy | Amber, bold |
+| `theme_vader` | Red accent lines | Dark gray | Bold |

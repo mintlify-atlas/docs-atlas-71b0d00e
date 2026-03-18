@@ -1,0 +1,182 @@
+---
+title: "Installation"
+description: "Install flextable from CRAN or GitHub and verify your setup."
+---
+
+## Install from CRAN
+
+The stable release of flextable is available on CRAN. Install it with:
+
+```r
+install.packages("flextable")
+```
+
+This is the recommended installation for most users.
+
+## Install the development version
+
+The development version is hosted on GitHub and may include new features and fixes not yet on CRAN:
+
+```r
+# install.packages("devtools")
+devtools::install_github("davidgohel/flextable")
+```
+
+<Note>
+The development version may be less stable than the CRAN release. Use it if you need a specific recent fix or feature that has not been released yet.
+</Note>
+
+## Dependencies
+
+flextable imports the following packages, which are installed automatically from CRAN:
+
+| Package | Minimum version | Purpose |
+|---|---|---|
+| `data.table` | 1.13.0 | Fast internal data manipulation |
+| `gdtools` | 0.5.0 | Font metrics and text rendering |
+| `htmltools` | — | HTML generation |
+| `knitr` | — | R Markdown / Quarto integration |
+| `officer` | 0.7.3 | Word and PowerPoint document creation |
+| `ragg` | — | High-quality PNG rendering |
+| `rlang` | — | Tidy evaluation utilities |
+| `rmarkdown` | 2.0 | R Markdown document rendering |
+| `uuid` | 0.1-4 | Unique identifiers for table elements |
+| `xml2` | — | XML manipulation for Open XML formats |
+| `graphics`, `grDevices`, `grid` | — | R base graphics |
+| `stats`, `utils` | — | R base utilities |
+
+### Optional packages
+
+The following packages extend flextable's capabilities. Install them as needed:
+
+<AccordionGroup>
+  <Accordion title="Image and PDF export">
+    ```r
+    install.packages(c("webshot2", "magick", "pdftools"))
+    ```
+    - `webshot2` — save tables as PNG or SVG images
+    - `magick` — image processing
+    - `pdftools` — read and manipulate PDF files
+  </Accordion>
+  <Accordion title="Statistical summaries">
+    ```r
+    install.packages(c("broom", "broom.mixed", "lme4", "nlme", "mgcv"))
+    ```
+    These packages enable `as_flextable()` to convert model objects from common modelling packages.
+  </Accordion>
+  <Accordion title="ggplot2 and patchwork integration">
+    ```r
+    install.packages(c("ggplot2", "patchwork", "gtable"))
+    ```
+    Use `gen_grob()` with patchwork to combine flextables and ggplot2 plots in a single figure.
+  </Accordion>
+  <Accordion title="officedown (enhanced R Markdown for Word)">
+    ```r
+    install.packages("officedown")
+    ```
+    `officedown` extends R Markdown with additional Word layout controls and works closely with flextable.
+  </Accordion>
+  <Accordion title="bookdown cross-references">
+    ```r
+    install.packages("bookdown")
+    ```
+    Minimum version 0.40. Required for numbered table captions and cross-references in bookdown documents.
+  </Accordion>
+</AccordionGroup>
+
+## Load the package
+
+After installation, load flextable in your R session:
+
+```r
+library(flextable)
+```
+
+## Check the installed version
+
+```r
+packageVersion("flextable")
+```
+
+You can also view the full list of installed metadata:
+
+```r
+packageDescription("flextable")
+```
+
+## R Markdown setup
+
+flextable works in R Markdown documents without any extra configuration — just load the package in a setup chunk and print the flextable object in a code chunk.
+
+```r
+library(flextable)
+
+flextable(head(airquality))
+```
+
+<Tip>
+Call `set_flextable_defaults()` in your setup chunk to apply consistent fonts, sizes, and colors across all tables in the document. This avoids repeating the same formatting calls for every table.
+</Tip>
+
+For example, a typical setup chunk looks like this:
+
+````
+```{r setup, include=FALSE}
+library(flextable)
+
+set_flextable_defaults(
+  font.family = "Arial",
+  font.size = 11,
+  font.color = "black",
+  border.color = "#666666",
+  padding = 5,
+  table.layout = "autofit"
+)
+```
+````
+
+### Chunk options for captions
+
+flextable supports knitr chunk options for table captions without needing to call `set_caption()` directly:
+
+````
+```{r}
+#| tab.id: tbl-airquality
+#| tab.cap: "Air quality measurements, New York, 1973"
+flextable(head(airquality))
+```
+````
+
+| Option | Description |
+|---|---|
+| `tab.cap` | Caption text |
+| `tab.id` | Caption bookmark or cross-reference ID |
+| `tab.cap.style` | Word style name for the caption paragraph |
+| `tab.topcaption` | Display caption above the table (default `TRUE`) |
+
+## Verify the installation
+
+Run this snippet to confirm everything is working:
+
+```r
+library(flextable)
+
+ft <- flextable(head(mtcars)) |>
+  theme_vanilla() |>
+  autofit()
+
+ft
+```
+
+If the table renders without errors, your installation is complete.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Create and export your first flextable
+  </Card>
+  <Card title="Global defaults" icon="sliders" href="/advanced/defaults">
+    Set font, color, and layout defaults once for all tables
+  </Card>
+</CardGroup>

@@ -1,122 +1,179 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "flextable",
+  "theme": "linden",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#2B5797",
+    "light": "#5B8DD9",
+    "dark": "#1A3A6B"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/davidgohel/flextable"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/davidgohel/flextable"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/table-structure",
+              "concepts/selectors",
+              "concepts/output-formats"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Formatting",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "formatting/text-formatting",
+              "formatting/cell-formatting",
+              "formatting/borders",
+              "formatting/alignment-padding",
+              "formatting/themes"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Layout",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "layout/headers-footers",
+              "layout/merging-cells",
+              "layout/column-row-sizing",
+              "layout/cell-content"
+            ]
+          },
+          {
+            "group": "Data Summaries",
+            "pages": [
+              "summaries/summarizor",
+              "summaries/tabulator",
+              "summaries/statistical-models",
+              "summaries/cross-tabulations"
+            ]
+          },
+          {
+            "group": "Export & Output",
+            "pages": [
+              "output/rmarkdown-quarto",
+              "output/word-powerpoint",
+              "output/html",
+              "output/pdf-latex",
+              "output/images"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/defaults",
+              "advanced/inline-content",
+              "advanced/mini-graphics",
+              "advanced/captions"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Constructor",
             "pages": [
-              "api-reference/introduction"
+              "reference/flextable",
+              "reference/qflextable",
+              "reference/as-flextable"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Text Formatting",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "reference/bold",
+              "reference/italic",
+              "reference/color",
+              "reference/fontsize",
+              "reference/font",
+              "reference/highlight",
+              "reference/style"
+            ]
+          },
+          {
+            "group": "Cell & Border",
+            "pages": [
+              "reference/bg",
+              "reference/border",
+              "reference/border-outer-inner",
+              "reference/padding",
+              "reference/valign",
+              "reference/align"
+            ]
+          },
+          {
+            "group": "Layout Functions",
+            "pages": [
+              "reference/merge",
+              "reference/width-height",
+              "reference/autofit",
+              "reference/rotate",
+              "reference/set-table-properties"
+            ]
+          },
+          {
+            "group": "Headers & Footers",
+            "pages": [
+              "reference/add-header-footer",
+              "reference/set-header-labels",
+              "reference/footnote",
+              "reference/set-caption"
+            ]
+          },
+          {
+            "group": "Content & Formatters",
+            "pages": [
+              "reference/compose",
+              "reference/colformat",
+              "reference/as-paragraph",
+              "reference/inline-elements"
+            ]
+          },
+          {
+            "group": "Themes",
+            "pages": [
+              "reference/themes"
+            ]
+          },
+          {
+            "group": "Saving",
+            "pages": [
+              "reference/save-as-docx",
+              "reference/save-as-html",
+              "reference/save-as-image",
+              "reference/save-as-pptx",
+              "reference/save-as-rtf"
+            ]
+          },
+          {
+            "group": "Defaults",
+            "pages": [
+              "reference/set-flextable-defaults"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

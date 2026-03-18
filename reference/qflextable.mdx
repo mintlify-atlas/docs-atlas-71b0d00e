@@ -1,0 +1,47 @@
+---
+title: qflextable()
+description: Quickly create a flextable with fixed layout and autofit column widths.
+---
+
+`qflextable()` is a shortcut for producing a ready-to-use flextable with a fixed table layout and automatically fitted column widths. It is equivalent to calling `flextable()`, `set_table_properties(layout = "fixed")`, and `autofit()` in sequence.
+
+Use `qflextable()` when you want a sensible default table for quick reporting without manual sizing.
+
+## Function signature
+
+```r
+qflextable(data)
+```
+
+## Parameters
+
+<ParamField path="data" type="data.frame" required>
+  A data frame. Passed directly to `flextable()`.
+</ParamField>
+
+## Return value
+
+An object of class `flextable` with a fixed table layout and column widths adjusted to fit their content.
+
+## Example
+
+```r
+ft <- qflextable(head(mtcars))
+ft
+```
+
+This is equivalent to:
+
+```r
+ft <- flextable(head(mtcars))
+ft <- set_table_properties(ft, layout = "fixed")
+ft <- autofit(ft)
+ft
+```
+
+## See also
+
+- [`flextable()`](/reference/flextable) — full constructor with all options
+- [`as_flextable()`](/reference/as-flextable) — convert other objects to flextable
+- [`autofit()`](/reference/autofit) — adjust column widths to fit content
+- [`set_table_properties()`](/reference/set-table-properties) — control table layout

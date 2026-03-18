@@ -1,0 +1,118 @@
+---
+title: align()
+description: Set horizontal text alignment in a flextable.
+---
+
+`align()` sets the horizontal alignment of text in selected cells. Two convenience variants — `align_text_col()` and `align_nottext_col()` — let you align all text or all non-text columns at once.
+
+## Function signatures
+
+```r
+align(
+  x,
+  i = NULL,
+  j = NULL,
+  align = "left",
+  part = c("body", "header", "footer", "all")
+)
+
+align_text_col(x, align = "left", header = TRUE, footer = TRUE)
+
+align_nottext_col(x, align = "right", header = TRUE, footer = TRUE)
+```
+
+## Parameters — `align()`
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. Accepts integer indices, a one-sided formula, or a logical vector. `NULL` selects all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Accepts integer indices, column names, or a formula. `NULL` selects all columns.
+</ParamField>
+
+<ParamField path="align" type="string | character vector" default='"left"'>
+  Text alignment. Accepted values: `"left"`, `"right"`, `"center"`, `"justify"`.
+
+  You can also pass a character vector with one value per selected column. If the number of columns is a multiple of the vector length, values are recycled.
+</ParamField>
+
+<ParamField path="part" type="string" default='"body"'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+## Parameters — `align_text_col()` and `align_nottext_col()`
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="align" type="string">
+  Alignment to apply. Accepted values: `"left"`, `"right"`, `"center"`, `"justify"`.
+</ParamField>
+
+<ParamField path="header" type="logical" default="TRUE">
+  Whether to also apply the alignment to the header part.
+</ParamField>
+
+<ParamField path="footer" type="logical" default="TRUE">
+  Whether to also apply the alignment to the footer part.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Right-align all six columns including the header:
+
+```r
+ft <- flextable(head(mtcars)[, 2:7])
+align(ft, align = "right", part = "all")
+```
+
+Specify a different alignment per column:
+
+```r
+ft <- flextable(head(mtcars)[, 2:7])
+align(
+  ft,
+  align = c("left", "right", "left", "center", "center", "right"),
+  part = "all"
+)
+```
+
+Center column 2 and left-align column 5:
+
+```r
+ft <- flextable(head(mtcars)[, 2:7])
+align(ft, j = c(2, 5), align = c("center", "left"), part = "all")
+```
+
+Alternate left and center across the first four columns in the header:
+
+```r
+ft <- flextable(head(mtcars)[, 2:7])
+align(ft, j = 1:4, align = c("left", "center"), part = "header")
+```
+
+Use the convenience functions to align by column type:
+
+```r
+ft <- flextable(mtcars)
+ft <- align_text_col(ft, align = "left")
+ft <- align_nottext_col(ft, align = "right")
+ft
+```
+
+## See also
+
+- [`valign()`](/reference/valign) — set vertical alignment
+- [`padding()`](/reference/padding) — set cell inner spacing
+- [`rotate()`](/reference/rotate) — rotate cell text
+- [`style()`](/reference/style) — apply multiple formatting properties at once

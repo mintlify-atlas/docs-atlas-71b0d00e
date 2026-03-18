@@ -1,0 +1,360 @@
+---
+title: "Output formats"
+description: "How to render and export a flextable to HTML, Word, PowerPoint, RTF, PDF, image, and R graphics."
+---
+
+flextable supports a wide range of output formats. When working inside R Markdown or Quarto, the correct format is selected automatically. For standalone scripts, use the dedicated `save_as_*` functions.
+
+## R Markdown and Quarto
+
+Placing a flextable object in a code chunk is all that is required. The `knit_print.flextable()` method handles format detection automatically:
+
+````
+```{r}
+ft <- flextable(head(airquality)) |>
+  theme_vanilla() |>
+  autofit()
+ft
+```
+````
+
+Supported knit output targets:
+
+| Output format | Rendered as |
+|---|---|
+| HTML (`html_document`, Quarto HTML) | Native HTML table with scoped CSS |
+| Word (`word_document`, Quarto Word) | Office Open XML table |
+| PDF (`pdf_document`, Quarto PDF) | LaTeX `longtable` |
+| PowerPoint (`powerpoint_presentation`, Quarto PPTX) | Native PowerPoint table |
+| Other formats (e.g., `github_document`) | PNG image fallback |
+
+### Quarto chunk options
+
+```
+```{r}
+#| label: tbl-summary
+#| tbl-cap: "Airquality sample"
+ft
+```
+````
+
+In Quarto, use `tbl-cap` and `label` chunk options for captions and cross-references. The `set_caption()` function is less useful in Quarto because Quarto manages captions itself.
+
+### R Markdown chunk options
+
+```r
+knitr::opts_chunk$set(
+  ft.align = "center",    # table alignment: "left", "center", "right"
+  ft.split = TRUE         # allow Word rows to break across pages
+)
+```
+
+Common per-chunk options:
+
+| Option | Format | Description |
+|---|---|---|
+| `ft.align` | All | Table alignment (`"left"`, `"center"`, `"right"`) |
+| `ft.split` | Word | Allow rows to break across pages |
+| `ft.htmlscroll` | HTML | Enable horizontal scrolling |
+| `ft.tabcolsep` | PDF | Space between text and cell borders (pt) |
+| `ft.arraystretch` | PDF | Row height multiplier (default 1.5) |
+| `ft.latex.float` | PDF | Float placement (`"none"`, `"float"`, `"wrap-r"`, etc.) |
+| `ft.left`, `ft.top` | PowerPoint | Table position in inches |
+
+### Printing inside loops
+
+When generating tables inside a `for` loop in R Markdown, use `flextable_to_rmd()` with `results='asis'`:
+
+```r
+# In a chunk with results='asis'
+for (nm in names(split_data)) {
+  flextable_to_rmd(flextable(split_data[[nm]]))
+}
+```
+
+## HTML
+
+### Save to a standalone HTML file
+
+```r
+ft1 <- flextable(head(iris)) |> theme_vanilla() |> autofit()
+tf <- tempfile(fileext = ".html")
+
+save_as_html(ft1, path = tf)
+```
+
+Pass multiple tables as named arguments — names become section headings:
+
+```r
+save_as_html(
+  `Iris data`   = ft1,
+  `Mtcars data` = ft2,
+  path = "tables.html",
+  title = "My Tables"
+)
+```
+
+### Use in Shiny
+
+`htmltools_value()` returns an `htmltools` tag object suitable for `shiny::renderUI()`:
+
+```r
+library(shiny)
+library(flextable)
+
+ui <- fluidPage(
+  uiOutput("table_out")
+)
+
+server <- function(input, output, session) {
+  output$table_out <- renderUI({
+    ft <- flextable(head(iris)) |> autofit()
+    htmltools_value(ft)
+  })
+}
+```
+
+<Note>
+HTML output uses Shadow DOM to isolate table styles from the host page. This prevents conflicts with existing CSS but means the table's styles are scoped to a shadow root.
+</Note>
+
+## Word (DOCX)
+
+### Save to a standalone Word file
+
+```r
+library(officer)
+
+ft <- flextable(head(iris)) |> theme_vanilla() |> autofit()
+save_as_docx(ft, path = "my_table.docx")
+```
+
+Control page layout with `officer::prop_section()`:
+
+```r
+sect_properties <- prop_section(
+  page_size = page_size(orient = "landscape", width = 8.3, height = 11.7),
+  type = "continuous",
+  page_margins = page_mar()
+)
+
+save_as_docx(
+  `Iris data`   = ft1,
+  `Mtcars data` = ft2,
+  path = "tables.docx",
+  pr_section = sect_properties
+)
+```
+
+### Embed in an officer Word document
+
+For full control — including captions, bookmarks, and document flow — use `officer` directly:
+
+```r
+library(officer)
+
+doc <- read_docx() |>
+  body_add_par("Table 1: Iris sample", style = "heading 2") |>
+  body_add_flextable(ft, align = "center")
+
+print(doc, target = "report.docx")
+```
+
+`body_add_flextable()` respects all `set_caption()` settings, including auto-numbering via `officer::run_autonum()`, paragraph styles, and caption position.
+
+## PowerPoint (PPTX)
+
+### Save to a standalone PowerPoint file
+
+```r
+ft1 <- flextable(head(iris))
+tf <- tempfile(fileext = ".pptx")
+save_as_pptx(ft1, path = tf)
+```
+
+Named arguments become slide titles:
+
+```r
+save_as_pptx(
+  `Iris table`   = ft1,
+  `Mtcars table` = ft2,
+  path = tf
+)
+```
+
+### Embed in an officer PowerPoint document
+
+Use `officer::ph_with()` for precise placement:
+
+```r
+library(officer)
+
+ft <- flextable(head(iris))
+
+doc <- read_pptx() |>
+  add_slide("Title and Content", "Office Theme") |>
+  ph_with(ft, location = ph_location_left())
+
+print(doc, target = "slides.pptx")
+```
+
+<Note>
+PowerPoint only supports fixed table layout. Use `autofit()` to adjust column widths. Images inside table cells are not supported — this is a PowerPoint limitation. Captions are also ignored in PowerPoint output.
+</Note>
+
+## RTF
+
+```r
+library(officer)
+
+ft <- flextable(head(iris)) |> theme_vanilla() |> autofit()
+tf <- tempfile(fileext = ".rtf")
+save_as_rtf(ft, path = tf)
+```
+
+Like `save_as_docx()`, pass a `prop_section` object to control page layout and add page headers:
+
+```r
+sect_properties <- prop_section(
+  page_size = page_size(orient = "landscape", width = 8.3, height = 11.7),
+  type = "continuous",
+  page_margins = page_mar(),
+  header_default = block_list(
+    fpar(ftext("text for default page header"))
+  )
+)
+
+tf <- tempfile(fileext = ".rtf")
+save_as_rtf(
+  `Iris table`   = ft1,
+  `Mtcars table` = ft2,
+  path = tf,
+  pr_section = sect_properties
+)
+```
+
+## PDF and LaTeX
+
+flextable generates LaTeX via knitr. No separate save function is needed — place a flextable in a code chunk in an R Markdown or Quarto document with PDF output:
+
+````
+```{r}
+#| ft.tabcolsep: 4
+#| ft.arraystretch: 1.8
+flextable(head(airquality)) |> theme_booktabs() |> autofit()
+```
+````
+
+Required LaTeX packages are injected automatically: `multirow`, `multicol`, `colortbl`, `hhline`, `longtable`, `array`, and `hyperref`. System fonts require `xelatex` or `lualatex`:
+
+```yaml
+# In YAML header
+pdf-engine: xelatex
+```
+
+### Caching
+
+When chunk caching is enabled, call `add_latex_dep()` in a non-cached chunk to ensure LaTeX dependencies are registered:
+
+```r
+add_latex_dep()
+```
+
+<Note>
+The following properties are not supported in PDF output: `padding.top`, `padding.bottom`, `line_spacing`, and row `height`. Justified text is converted to left-aligned.
+</Note>
+
+## Images (PNG and SVG)
+
+`save_as_image()` exports a flextable as a PNG or SVG file using the R graphics system:
+
+```r
+library(gdtools)
+register_liberationsans()
+set_flextable_defaults(font.family = "Liberation Sans")
+
+ft <- flextable(head(mtcars)) |> autofit()
+tf <- tempfile(fileext = ".png")
+save_as_image(x = ft, path = tf)
+
+init_flextable_defaults()
+```
+
+For SVG output, install the `svglite` package and use a `.svg` path:
+
+```r
+tf <- tempfile(fileext = ".svg")
+save_as_image(x = ft, path = tf)
+```
+
+<Note>
+Captions are not included in image exports. Captions are designed for document outputs (Word, HTML, PDF) where the table is embedded in a document flow.
+</Note>
+
+## R grid graphics
+
+`gen_grob()` converts a flextable to a `grid` graphics object (`grob`). This is the function behind `save_as_image()` and the patchwork integration.
+
+```r
+library(ragg)
+library(gdtools)
+register_liberationsans()
+set_flextable_defaults(font.family = "Liberation Sans")
+
+ft <- flextable(head(mtcars))
+gr <- gen_grob(ft, fit = "fixed", just = "center")
+plot(gr)
+```
+
+The `fit` argument controls how the grob adapts to its parent viewport:
+
+| Value | Behavior |
+|---|---|
+| `"auto"` (default) | Resize proportionally to fill the viewport |
+| `"width"` | Resize horizontally only; height is unchanged |
+| `"fixed"` | Fixed dimensions from column widths and row heights |
+
+### patchwork integration
+
+`wrap_flextable()` wraps a flextable for use in a [patchwork](https://patchwork.data-imaginist.com/) layout alongside ggplot2 plots:
+
+```r
+library(ggplot2)
+library(patchwork)
+
+ft <- flextable(head(mtcars, 5)) |> autofit()
+p  <- ggplot(mtcars, aes(mpg, hp)) + geom_point()
+
+wrap_flextable(ft, just = "left") + p
+```
+
+For aligned row/column layouts with a neighboring plot, use `flex_body = TRUE` or `flex_cols = TRUE`:
+
+```r
+wrap_flextable(ft, flex_body = TRUE) + p + plot_layout(widths = c(1, 2))
+```
+
+flextable objects can also be added directly to a patchwork composition with `+` — `ggplot_add.flextable` is registered automatically when both packages are loaded.
+
+## Format comparison
+
+<CardGroup cols={2}>
+  <Card title="HTML" icon="code">
+    `save_as_html()` or `htmltools_value()` for Shiny. Full CSS styling. Shadow DOM isolation.
+  </Card>
+  <Card title="Word" icon="file-word">
+    `save_as_docx()` or `body_add_flextable()` via officer. Full caption and pagination support.
+  </Card>
+  <Card title="PowerPoint" icon="presentation">
+    `save_as_pptx()` or `ph_with()` via officer. Fixed layout only. No captions.
+  </Card>
+  <Card title="RTF" icon="file">
+    `save_as_rtf()`. Similar to Word support. Page headers and footers supported.
+  </Card>
+  <Card title="PDF / LaTeX" icon="file-pdf">
+    Automatic via knitr. Requires `xelatex` for system fonts.
+  </Card>
+  <Card title="PNG / SVG" icon="image">
+    `save_as_image()`. No captions. Requires `ragg` (PNG) or `svglite` (SVG).
+  </Card>
+</CardGroup>

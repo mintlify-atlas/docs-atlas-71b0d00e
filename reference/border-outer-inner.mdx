@@ -1,0 +1,90 @@
+---
+title: fix_border_issues() and before()
+description: Fix border rendering issues and select rows before a target value in flextable.
+---
+
+This page covers two utilities that complement the border functions in flextable.
+
+## `fix_border_issues()`
+
+`fix_border_issues()` resolves rendering inconsistencies that can occur when borders of adjacent cells conflict. flextable stores borders per-cell, and when both adjacent cells specify a shared edge, different output formats resolve the conflict differently. This function normalises the border data so that rendering is consistent across Word, PowerPoint, HTML, and PDF.
+
+Call this function after you have finished applying all border settings and before rendering.
+
+```r
+fix_border_issues(x, part = "all")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="part" type="string" default='"all"'>
+  Which part to process: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+### Return value
+
+The modified `flextable` object with normalised border data.
+
+### Example
+
+```r
+library(officer)
+
+ft <- flextable(head(iris))
+ft <- border_outer(ft, border = fp_border(color = "black", width = 2))
+ft <- border_inner_h(ft, border = fp_border(color = "gray", width = 1))
+ft <- fix_border_issues(ft)
+ft
+```
+
+---
+
+## `before()`
+
+`before()` is a helper function used as a row selector inside the `i` argument of [`hline()`](/reference/border). It returns a logical vector that is `TRUE` for every row that immediately precedes one of the specified `entries` values. This makes it easy to draw a separator line above summary rows such as `"Total"`.
+
+```r
+before(x, entries)
+```
+
+<ParamField path="x" type="atomic vector" required>
+  The column values to test. Typically a column from the table's data frame.
+</ParamField>
+
+<ParamField path="entries" type="atomic vector" required>
+  One or more values to search for. The function returns `TRUE` for the row immediately before each first occurrence of any of these values.
+</ParamField>
+
+### Return value
+
+A logical vector of the same length as `x`.
+
+### Example
+
+Insert a thick line above the "Total" row:
+
+```r
+library(flextable)
+library(officer)
+
+dat <- data.frame(
+  Level = c("setosa", "versicolor", "virginica", "<NA>", "Total"),
+  Freq  = as.integer(c(50, 50, 50, 0, 150))
+)
+
+ft <- flextable(dat)
+ft <- hline(
+  ft,
+  i = ~ before(Level, "Total"),
+  border = fp_border_default(width = 2)
+)
+ft
+```
+
+## See also
+
+- [`hline()`](/reference/border) — draw horizontal lines at specific rows
+- [`border_outer()`](/reference/border) — set the outer table border
+- [`border_inner_h()`](/reference/border) — set inner horizontal borders

@@ -1,0 +1,379 @@
+---
+title: "Cell content"
+description: "Compose rich cell content from text chunks, images, equations, hyperlinks, and inline formatters using compose() and as_paragraph()."
+---
+
+Every cell in a flextable contains exactly one paragraph. A paragraph is an ordered sequence of **chunks** — the smallest content units. You build a paragraph with `as_paragraph()` and set it in a cell with `compose()` (or its alias `mk_par()`).
+
+## How compose works
+
+`compose()` replaces the displayed content of selected cells with a paragraph you define:
+
+```r
+library(flextable)
+
+ft <- flextable(head(iris))
+ft <- compose(
+  ft,
+  j     = "Sepal.Length",
+  value = as_paragraph(
+    "Length: ",
+    as_chunk(Sepal.Length, props = fp_text_default(color = "red"))
+  ),
+  part = "body"
+)
+ft <- autofit(ft)
+ft
+```
+
+The `value` argument must be a call to `as_paragraph()`. Row and column selectors (`i`, `j`) work the same way as in all other flextable functions.
+
+`mk_par()` is an alias for `compose()` provided because `compose` conflicts with `purrr::compose()`:
+
+```r
+ft <- mk_par(
+  x     = ft,
+  j     = "comment",
+  i     = ~ dist > 9,
+  value = as_paragraph(
+    colorize(as_i("speed: "), color = "gray"),
+    as_sup(sprintf("%.0f", speed))
+  )
+)
+```
+
+### Using `use_dot = TRUE`
+
+Set `use_dot = TRUE` to access the column's own values as `.` inside the `as_paragraph()` call. This lets you reference a column by formula without spelling out its name:
+
+```r
+set.seed(8)
+dat <- iris[sample.int(150, size = 10), ]
+dat <- dat[order(dat$Species), ]
+
+ft <- flextable(dat)
+ft <- mk_par(ft,
+  j        = ~ . - Species,
+  value    = as_paragraph(
+    minibar(., barcol = "white", height = .1)
+  ),
+  use_dot  = TRUE
+)
+ft <- theme_vader(ft)
+ft <- autofit(ft)
+ft
+```
+
+## Building paragraphs with `as_paragraph()`
+
+`as_paragraph()` assembles one or more chunk objects into a single paragraph. Plain character strings are automatically converted to chunks:
+
+```r
+ft <- flextable(airquality[sample.int(150, size = 10), ])
+ft <- compose(ft,
+  j     = "Wind",
+  value = as_paragraph(
+    as_chunk(Wind, props = fp_text_default(color = "orange")),
+    " ",
+    minibar(
+      value  = Wind,
+      max    = max(airquality$Wind),
+      barcol = "orange",
+      bg     = "black",
+      height = .15
+    )
+  ),
+  part = "body"
+)
+ft <- autofit(ft)
+ft
+```
+
+## Text chunks
+
+### `as_chunk()` — formatted text
+
+`as_chunk()` converts a value to a text chunk with optional text properties:
+
+```r
+ft <- flextable(head(iris))
+ft <- compose(ft,
+  j     = "Sepal.Length",
+  value = as_paragraph(
+    "Sepal.Length value is ",
+    as_chunk(Sepal.Length, props = fp_text_default(color = "red"))
+  ),
+  part = "body"
+)
+ft <- color(ft, color = "gray40", part = "all")
+ft <- autofit(ft)
+ft
+```
+
+The `formatter` argument accepts any function that turns `x` into a character vector. The default is `format_fun`, which applies sensible defaults for numbers and other types.
+
+### Inline style shortcuts
+
+These chunk functions apply a single style property and accept either a raw value or an existing chunk object:
+
+<Tabs>
+  <Tab title="as_b">
+    ```r
+    ft <- compose(ft,
+      j = "dummy",
+      value = as_paragraph(as_b(Sepal.Length))
+    )
+    ```
+    Sets `bold = TRUE`.
+  </Tab>
+  <Tab title="as_i">
+    ```r
+    ft <- compose(ft,
+      j = "dummy",
+      value = as_paragraph(as_i(Sepal.Length))
+    )
+    ```
+    Sets `italic = TRUE`.
+  </Tab>
+  <Tab title="as_sub">
+    ```r
+    ft <- compose(ft,
+      i = 1, j = "dummy", part = "header",
+      value = as_paragraph(
+        as_sub("Sepal.Length"),
+        " anything "
+      )
+    )
+    ```
+    Sets vertical alignment to `"subscript"`.
+  </Tab>
+  <Tab title="as_sup">
+    ```r
+    ft <- compose(ft,
+      i = 1, j = "dummy", part = "header",
+      value = as_paragraph(
+        " anything ",
+        as_sup("Sepal.Width")
+      )
+    )
+    ```
+    Sets vertical alignment to `"superscript"`.
+  </Tab>
+</Tabs>
+
+### `colorize()` — font color
+
+`colorize()` sets the text color of a chunk:
+
+```r
+ft <- compose(ft,
+  j     = "dummy",
+  value = as_paragraph(colorize(Sepal.Length, color = "red"))
+)
+```
+
+It accepts any R color name or hex string and can wrap an existing chunk or a raw value.
+
+### `as_highlight()` — background highlight
+
+`as_highlight()` sets the background (shading) color of a chunk:
+
+```r
+ft <- compose(ft,
+  j     = "dummy",
+  value = as_paragraph(as_highlight(Sepal.Length, color = "yellow"))
+)
+```
+
+### `as_bracket()` — parenthesized values
+
+`as_bracket()` concatenates multiple values and wraps them in brackets. Useful for combining a mean and standard deviation:
+
+```r
+ft <- flextable(head(iris), col_keys = c("Species", "Sepal", "Petal"))
+ft <- compose(ft,
+  j     = "Sepal",
+  value = as_paragraph(as_bracket(Sepal.Length, Sepal.Width))
+)
+ft <- compose(ft,
+  j     = "Petal",
+  value = as_paragraph(as_bracket(Petal.Length, Petal.Width))
+)
+ft
+```
+
+The default separator is `", "` and the default brackets are `(` and `)`. Override with `sep`, `p`, and `s`.
+
+## Hyperlinks
+
+`hyperlink_text()` creates a clickable link chunk:
+
+```r
+dat <- data.frame(
+  col  = "Google it",
+  href = "https://www.google.fr/search?source=hp&q=flextable+R+package",
+  stringsAsFactors = FALSE
+)
+
+ftab <- flextable(dat)
+ftab <- compose(
+  x     = ftab,
+  j     = "col",
+  value = as_paragraph(
+    "This is a link: ",
+    hyperlink_text(x = col, url = href)
+  )
+)
+ftab
+```
+
+URL encoding is not applied — the `url` value is passed through as-is.
+
+<Note>
+Hyperlinks require the `officedown` package when rendering to Word (docx) in an R Markdown context.
+</Note>
+
+## Images
+
+`as_image()` embeds an image file as a chunk inside a cell:
+
+```r
+img.file <- file.path(R.home("doc"), "html", "logo.jpg")
+
+if (require("magick")) {
+  ft <- flextable(head(iris))
+  ft <- compose(ft,
+    i     = 1:3,
+    j     = 1,
+    value = as_paragraph(
+      as_image(src = img.file),
+      " ",
+      as_chunk(Sepal.Length, props = fp_text_default(color = "red"))
+    ),
+    part = "body"
+  )
+  ft <- autofit(ft)
+  ft
+}
+```
+
+Provide explicit `width` and `height` in inches, or set `guess_size = TRUE` (requires the `magick` package) to detect dimensions automatically.
+
+<Warning>
+PowerPoint cannot mix images and text in the same paragraph. Images are silently removed when outputting to `.pptx`.
+</Warning>
+
+## Equations
+
+`as_equation()` renders a MathJax equation inside a cell. It requires the `equatags` package and a one-time call to `equatags::mathjax_install()`:
+
+```r
+if (require("equatags")) {
+  eqs <- c(
+    "(ax^2 + bx + c = 0)",
+    "a \\ne 0",
+    "x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}"
+  )
+  df <- data.frame(formula = eqs)
+
+  ft <- flextable(df)
+  ft <- compose(
+    x     = ft,
+    j     = "formula",
+    value = as_paragraph(as_equation(formula, width = 2, height = .5))
+  )
+  ft <- align(ft, align = "center", part = "all")
+  ft <- width(ft, width = 2)
+  ft
+}
+```
+
+## Word field codes
+
+`as_word_field()` inserts a Word field code — such as `PAGE` or `NumPages` — as a chunk. Fields are only meaningful in Word (`.docx`) output; other formats ignore them.
+
+```r
+library(officer)
+
+ft <- flextable(head(cars))
+ft <- add_footer_lines(ft, "temp text")
+ft <- compose(
+  x     = ft,
+  part  = "footer",
+  i     = 1,
+  j     = 1,
+  value = as_paragraph(
+    "p. ",
+    as_word_field(x = "Page",     width = .05),
+    " on ",
+    as_word_field(x = "NumPages", width = .05)
+  )
+)
+ft <- autofit(ft, part = c("header", "body"))
+```
+
+<Note>
+Fields are inserted but not computed at the time of writing. Open the document in Word and press `F9` (macOS: `Fn + F9`) to refresh all field values.
+</Note>
+
+You can also insert field codes via a post-processing hook to avoid applying them in non-Word output:
+
+```r
+pp_docx <- function(x) {
+  x <- add_header_lines(x, "Page ")
+  x <- append_chunks(
+    x    = x,
+    i    = 1,
+    part = "header",
+    j    = 1,
+    as_word_field(x = "Page")
+  )
+  align(x, part = "header", align = "left")
+}
+
+# Apply only for Word output:
+# set_flextable_defaults(post_process_docx = pp_docx)
+```
+
+## Combining multiple chunk types
+
+Chunks can be freely combined inside a single `as_paragraph()` call. The following example places italic gray label text alongside a superscripted numeric value:
+
+```r
+ft <- flextable(
+  head(cars, n = 5),
+  col_keys = c("speed", "dist", "comment")
+)
+
+ft <- mk_par(
+  x     = ft,
+  j     = "comment",
+  i     = ~ dist > 9,
+  value = as_paragraph(
+    colorize(as_i("speed: "), color = "gray"),
+    as_sup(sprintf("%.0f", speed))
+  )
+)
+ft <- set_table_properties(ft, layout = "autofit")
+ft
+```
+
+This produces cells containing italic gray text followed by a superscript number, only for rows where `dist > 9`.
+
+### Mini bar charts
+
+`minibar()` renders a proportional bar as a raster image chunk:
+
+```r
+ft <- flextable(head(iris, n = 10))
+
+ft <- compose(ft,
+  j     = 1,
+  value = as_paragraph(
+    minibar(value = Sepal.Length, max = max(Sepal.Length))
+  ),
+  part = "body"
+)
+ft <- autofit(ft)
+ft
+```

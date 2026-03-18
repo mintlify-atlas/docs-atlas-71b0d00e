@@ -1,0 +1,269 @@
+---
+title: "Descriptive statistics with summarizor"
+description: "Use summarizor() to compute univariate statistics by group and render the result as a formatted flextable."
+---
+
+`summarizor()` performs a univariate statistical analysis of a dataset, optionally grouped by one or more columns, and returns an object that you can pass directly to `as_flextable()`. It handles both continuous (numeric) and discrete (factor/character) variables in one call.
+
+<Note>
+`summarizor()` is an early-stage function. Its interface may evolve in future releases.
+</Note>
+
+## Basic usage
+
+```r
+library(flextable)
+
+z <- summarizor(CO2[-c(1, 4)], by = "Treatment", overall_label = "Overall")
+ft <- as_flextable(z)
+ft
+```
+
+Passing a character vector to `by` groups the summary by those columns. `overall_label` adds an extra column that pools all groups under the given label — useful for showing column totals alongside group breakdowns.
+
+## Function reference
+
+### `summarizor()`
+
+```r
+summarizor(
+  x,
+  by = character(),
+  overall_label = NULL,
+  num_stats = c("mean_sd", "median_iqr", "range"),
+  hide_null_na = TRUE,
+  use_labels = TRUE
+)
+```
+
+| Parameter | Description |
+|---|---|
+| `x` | A `data.frame` to summarize. |
+| `by` | Column name(s) to group by. If empty, a single overall column is created. |
+| `overall_label` | When set and `by` is not empty, an additional group column is appended using this label (e.g. `"Overall"`). |
+| `num_stats` | Which numeric statistics to include. Any subset of `"mean_sd"`, `"median_iqr"`, and `"range"`. |
+| `hide_null_na` | If `TRUE` (default), rows where the missing-value count is 0 are suppressed. |
+| `use_labels` | If `TRUE` (default), variable labels and value labels stored in the dataset are used for display. |
+
+**Numeric statistics produced:**
+
+| `num_stats` value | Display format |
+|---|---|
+| `"mean_sd"` | `mean (sd)` |
+| `"median_iqr"` | `median (IQR)` |
+| `"range"` | `min - max` |
+
+**Discrete statistics produced:**  
+For factor and character columns, `summarizor()` shows a count and percentage for each level, plus a missing count if any NAs exist.
+
+### `as_flextable()` for summarizor objects
+
+The `as_flextable()` method for `summarizor` objects internally calls `tabulator()` and `as_flextable.tabulator()`, so it accepts all the same layout arguments:
+
+```r
+as_flextable(
+  x,
+  spread_first_col = FALSE,
+  sep_w = 0.05,
+  separate_with = character(0),
+  ...
+)
+```
+
+| Parameter | Description |
+|---|---|
+| `spread_first_col` | If `TRUE`, the first row dimension (the variable name) becomes a full-width group separator row instead of a column. Reduces table width and makes groupings clearer. |
+| `sep_w` | Width in inches of the blank separator columns between group columns. Set to `0` to remove them. |
+| `separate_with` | Column names from the `rows` dimensions used to insert horizontal lines between groups. |
+
+## Examples
+
+### Grouped summary with an overall column
+
+```r
+library(flextable)
+
+z <- summarizor(
+  CO2[-c(1, 4)],
+  by = "Treatment",
+  overall_label = "Overall"
+)
+
+# Default layout: variable as a column
+ft_1 <- as_flextable(z)
+ft_1
+```
+
+### Spread layout — variable names as row separators
+
+```r
+# spread_first_col = TRUE moves the variable name to a separator row
+ft_2 <- as_flextable(z, sep_w = 0, spread_first_col = TRUE)
+ft_2
+```
+
+When `spread_first_col = TRUE`, the variable name row spans the full width of the table and the statistics are indented beneath it. Combining `spread_first_col = TRUE` with `sep_w = 0` removes the blank spacer columns for a more compact result.
+
+### Summary without grouping
+
+```r
+z <- summarizor(CO2[-c(1, 4)])
+ft_3 <- as_flextable(z, sep_w = 0, spread_first_col = TRUE)
+ft_3
+```
+
+When `by` is empty, `summarizor()` produces a single overall column labelled `"Statistic"`.
+
+### Selecting numeric statistics
+
+```r
+# Show only mean (SD) — omit median IQR and range
+z <- summarizor(
+  iris,
+  by = "Species",
+  num_stats = "mean_sd"
+)
+ft <- as_flextable(z)
+ft
+```
+
+## Using `overall_label` for column totals
+
+`overall_label` duplicates the data with each grouping column set to the label value, then adds that as an extra column in the output. This means each group column and the "Overall" column are computed from the same data:
+
+```r
+z <- summarizor(
+  CO2[-c(1, 4)],
+  by = "Treatment",
+  overall_label = "Overall"
+)
+ft <- as_flextable(z, spread_first_col = TRUE)
+ft
+```
+
+The sample size `(N=XX)` is appended automatically to each column header using `fmt_header_n()`.
+
+## Customizing with `fmt_summarizor()` and `tabulator()`
+
+For full control over the display format, call `tabulator()` directly using the `summarizor` output and supply your own `as_paragraph()` expression:
+
+```r
+library(flextable)
+
+z <- summarizor(iris, by = "Species")
+
+tab <- tabulator(
+  x = z,
+  rows = c("variable", "stat"),
+  columns = "Species",
+  blah = as_paragraph(
+    as_chunk(
+      fmt_summarizor(
+        stat = stat,
+        num1 = value1, num2 = value2,
+        cts = cts, pcts = percent
+      )
+    )
+  )
+)
+
+ft <- as_flextable(x = tab, separate_with = "variable")
+ft
+```
+
+`fmt_summarizor()` (an alias for `fmt_2stats()`) formats numeric pairs as `mean (sd)`, `median (IQR)`, or `min - max`, and discrete counts as `n (xx.x%)`.
+
+## Applying column labels with `labelizor()`
+
+After rendering, use `labelizor()` to rename the statistic labels in any language:
+
+```r
+ft <- labelizor(
+  x = ft, j = "stat",
+  labels = c(
+    mean_sd = "Moyenne (ecart-type)",
+    median_iqr = "Mediane (IQR)",
+    range = "Etendue",
+    missing = "Valeurs manquantes"
+  )
+)
+ft
+```
+
+When `use_labels = TRUE` in `summarizor()`, variable labels already stored in the dataset (e.g. from the `labelled` package) are applied automatically during `as_flextable()`.
+
+## Numeric-only summaries with `continuous_summary()`
+
+`continuous_summary()` targets numeric columns only and returns a flextable directly — no intermediate `summarizor` object:
+
+```r
+continuous_summary(
+  dat,
+  columns = NULL,
+  by = character(0),
+  hide_grouplabel = TRUE,
+  digits = 3
+)
+```
+
+| Parameter | Description |
+|---|---|
+| `dat` | A `data.frame`. |
+| `columns` | Names of numeric columns to summarize. If `NULL`, all numeric columns are used. |
+| `by` | Grouping column names. |
+| `hide_grouplabel` | If `TRUE` (default), the group label prefix is hidden — only the value is shown. |
+| `digits` | Number of decimal places for numeric columns. |
+
+It computes N, min, Q1, median, Q3, max, mean, SD, MAD, and NA count:
+
+```r
+library(flextable)
+
+ft <- continuous_summary(
+  iris,
+  names(iris)[1:4],
+  by = "Species",
+  hide_grouplabel = FALSE
+)
+ft
+```
+
+## Compact dataset overview with `compact_summary()`
+
+`compact_summary()` produces a one-row-per-column overview of a data frame. It is useful for inspecting a dataset's structure before building a detailed summary:
+
+```r
+compact_summary(
+  x,
+  show_type = FALSE,
+  show_na = FALSE,
+  max_levels = 10L
+)
+```
+
+| Parameter | Description |
+|---|---|
+| `x` | A `data.frame`. |
+| `show_type` | If `TRUE`, adds a *Type* column showing the R class. |
+| `show_na` | If `TRUE`, adds an *NA* column with the count of missing values. |
+| `max_levels` | Maximum number of factor/character levels shown. Additional values are replaced by `", ..."`. |
+
+The result has class `"compact_summary"` and is rendered with `as_flextable()`:
+
+```r
+library(flextable)
+
+z <- compact_summary(iris, show_type = TRUE, show_na = TRUE)
+as_flextable(z)
+```
+
+**What each type shows in the Values column:**
+
+| R type | Values column content |
+|---|---|
+| numeric / integer | `Min: X, Max: Y` |
+| factor | Level count, levels listed |
+| character | Unique value count, values listed |
+| logical | `TRUE: N, FALSE: M` |
+| Date / POSIXct | Date or datetime range |
+| hms / difftime | Time range |

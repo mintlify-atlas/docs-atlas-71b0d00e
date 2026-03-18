@@ -1,0 +1,85 @@
+---
+title: color()
+description: Set font color on selected rows and columns of a flextable.
+---
+
+`color()` changes the text color of a selection of cells in a flextable. You can supply a fixed color string or a function that derives colors from column values.
+
+## Function signature
+
+```r
+color(x, i = NULL, j = NULL, color, part = "body", source = j)
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. Accepts integer indices, a one-sided formula (e.g., `~ col > 5`), or a logical vector. `NULL` selects all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Accepts integer indices, column names, a formula, or a logical vector. `NULL` selects all columns.
+</ParamField>
+
+<ParamField path="color" type="string | function" required>
+  A CSS-compatible color string (e.g., `"red"`, `"#FF0000"`) or a function that accepts a vector of data values and returns a character vector of color strings.
+</ParamField>
+
+<ParamField path="part" type="string" default='body'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+<ParamField path="source" type="integer | character | formula" default="j">
+  When `color` is a function, `source` specifies which dataset column(s) are passed as input to the function. This allows coloring cells in `j` based on values from a different (possibly hidden) column. Defaults to `j`.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Apply a fixed color to the header:
+
+```r
+ft <- flextable(head(mtcars))
+ft <- color(ft, color = "orange", part = "header")
+ft
+```
+
+Color rows conditionally using a formula:
+
+```r
+ft <- flextable(head(mtcars))
+ft <- color(ft,
+  color = "red",
+  i = ~ qsec < 18 & vs < 1
+)
+ft
+```
+
+Color cells with a scaling function (requires the `scales` package):
+
+```r
+if (require("scales")) {
+  scale <- scales::col_numeric(domain = c(-1, 1), palette = "RdBu")
+  x <- as.data.frame(cor(iris[-5]))
+  x <- cbind(
+    data.frame(
+      colname = colnames(x),
+      stringsAsFactors = FALSE
+    ),
+    x
+  )
+}
+```
+
+## See also
+
+- [`highlight()`](/reference/highlight) — set text background highlight color
+- [`bold()`](/reference/bold)
+- [`style()`](/reference/style) — apply multiple formatting properties at once

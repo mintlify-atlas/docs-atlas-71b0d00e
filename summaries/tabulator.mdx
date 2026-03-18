@@ -1,0 +1,314 @@
+---
+title: "Complex cross-tabulations with tabulator"
+description: "Use tabulator() to build pivot-style summary tables that spread aggregated data across both rows and columns with full flextable formatting control."
+---
+
+`tabulator()` takes a pre-aggregated `data.frame` and renders it as a cross-tabulation where one set of columns forms the row labels and another set forms the column headers. You supply the display expressions — which can include any flextable inline formatting — through named `...` arguments.
+
+<Note>
+`tabulator()` is an early-stage function. Its interface may evolve in future releases.
+</Note>
+
+## When to use `tabulator` vs `summarizor`
+
+<Tabs>
+  <Tab title="tabulator">
+    Use `tabulator()` when you have already aggregated your data and need full control over what appears in each cell — including mixed content, conditional formatting, or multiple statistics per cell.
+
+    ```r
+    # You supply the aggregation
+    dat <- aggregate(breaks ~ wool + tension, data = warpbreaks, mean)
+
+    tab <- tabulator(
+      x = dat, rows = "wool",
+      columns = "tension",
+      `mean` = as_paragraph(as_chunk(breaks)),
+      `(N)` = as_paragraph(as_chunk(length(breaks), formatter = fmt_int))
+    )
+    ft <- as_flextable(tab)
+    ft
+    ```
+  </Tab>
+  <Tab title="summarizor">
+    Use `summarizor()` when you want automatic univariate statistics (mean, SD, counts, etc.) computed for you.
+
+    ```r
+    # Aggregation is automatic
+    z <- summarizor(CO2[-c(1, 4)], by = "Treatment")
+    ft <- as_flextable(z)
+    ft
+    ```
+  </Tab>
+</Tabs>
+
+## Function reference
+
+### `tabulator()`
+
+```r
+tabulator(
+  x,
+  rows,
+  columns,
+  datasup_first = NULL,
+  datasup_last = NULL,
+  hidden_data = NULL,
+  row_compose = list(),
+  ...
+)
+```
+
+| Parameter | Description |
+|---|---|
+| `x` | A pre-aggregated `data.frame`. Every combination of `rows` and `columns` values must appear at most once. |
+| `rows` | Column name(s) from `x` to use as row dimensions (the left-hand side). |
+| `columns` | Column name(s) from `x` to use as column dimensions (the top header). |
+| `datasup_first` | Additional `data.frame` merged into the table and placed immediately after the row dimension columns. |
+| `datasup_last` | Additional `data.frame` merged into the table and placed at the far right. |
+| `hidden_data` | Additional `data.frame` merged into the table whose columns are not displayed but can be referenced in `mk_par()` or `compose()` expressions. |
+| `row_compose` | A named list of `as_paragraph()` calls applied to the row dimension columns. |
+| `...` | Named `as_paragraph()` expressions. Each name becomes a column label; the expression defines cell content. |
+
+The `...` expressions are evaluated lazily in the context of the flextable body, so you can reference any column from `x` by name.
+
+### `as_flextable()` for tabulator objects
+
+```r
+as_flextable(
+  x,
+  separate_with = character(0),
+  big_border = fp_border_default(width = 1.5),
+  small_border = fp_border_default(width = 0.75),
+  rows_alignment = "left",
+  columns_alignment = "center",
+  label_rows = x$rows,
+  spread_first_col = FALSE,
+  expand_single = FALSE,
+  sep_w = 0.05,
+  unit = "in",
+  ...
+)
+```
+
+| Parameter | Description |
+|---|---|
+| `separate_with` | Row dimension column name(s) that trigger a horizontal rule between groups. Must be a subset of `rows`. |
+| `big_border` | Border style for the outer table edges and the line below the header. |
+| `small_border` | Border style for internal separator lines and column-spanning header lines. |
+| `rows_alignment` | Text alignment for row dimension columns (default `"left"`). |
+| `columns_alignment` | Text alignment for data columns (default `"center"`). |
+| `label_rows` | Named character vector for relabelling row dimension column headers. |
+| `spread_first_col` | If `TRUE`, the first row dimension becomes a full-width group separator row. |
+| `expand_single` | If `FALSE` (default), groups with a single row are not expanded with a title row. |
+| `sep_w` | Width in inches of blank separator columns between column groups. Set to `0` to remove them. |
+| `unit` | Unit for `sep_w`: `"in"`, `"cm"`, or `"mm"`. |
+
+### `tabulator_colnames()`
+
+Returns the `col_keys` that correspond to a selection of original column names and filter conditions. Use this to target specific cells after rendering:
+
+```r
+tabulator_colnames(
+  x,
+  columns,
+  ...,
+  type = NULL
+)
+```
+
+| Parameter | Description |
+|---|---|
+| `x` | A `tabulator` object. |
+| `columns` | Column names from the original dataset to look for. |
+| `...` | Filter expressions using the `columns` dimension variables (e.g. `stage %in% 1`). |
+| `type` | One of `"columns"` (visible data columns), `"hidden"` (hidden data columns), `"rows"`, `"rows_supp"`, or `NULL` (all types). |
+
+### `summary()` for tabulator objects
+
+Calling `summary()` on a `tabulator` object returns a `data.frame` mapping original column names to the `col_keys` used in the flextable. Inspect this to find the correct key names for further customisation:
+
+```r
+tab <- tabulator(dat, rows = "wool", columns = "tension",
+  `mean` = as_paragraph(as_chunk(breaks))
+)
+summary(tab)
+# col_keys | column | .type.
+# ...      | ...    | ...
+```
+
+## Examples
+
+### Single statistic per cell
+
+```r
+library(flextable)
+set_flextable_defaults(digits = 2, border.color = "gray")
+
+dat <- aggregate(breaks ~ wool + tension, data = warpbreaks, mean)
+
+cft_1 <- tabulator(
+  x = dat, rows = "wool",
+  columns = "tension",
+  `mean` = as_paragraph(as_chunk(breaks)),
+  `(N)` = as_paragraph(as_chunk(length(breaks), formatter = fmt_int))
+)
+
+ft_1 <- as_flextable(cft_1, sep_w = .1)
+ft_1
+```
+
+### Multiple statistics with `fmt_avg_dev()`
+
+`fmt_avg_dev()` formats a mean and standard deviation as `"mean (sd)"`:
+
+```r
+library(flextable)
+library(data.table)
+
+multi_fun <- function(x) list(mean = mean(x), sd = sd(x))
+
+dat <- as.data.table(ggplot2::diamonds)
+dat <- dat[cut %in% c("Fair", "Good", "Very Good")]
+dat <- dat[
+  , unlist(lapply(.SD, multi_fun), recursive = FALSE),
+  .SDcols = c("z", "y"),
+  by = c("cut", "color")
+]
+
+tab_2 <- tabulator(
+  x = dat, rows = "color",
+  columns = "cut",
+  `z stats` = as_paragraph(as_chunk(fmt_avg_dev(z.mean, z.sd, digit2 = 2))),
+  `y stats` = as_paragraph(as_chunk(fmt_avg_dev(y.mean, y.sd, digit2 = 2)))
+)
+ft_2 <- as_flextable(tab_2)
+ft_2 <- autofit(ft_2, add_w = .05)
+ft_2
+```
+
+### Multiple row dimensions
+
+```r
+library(data.table)
+
+dat <- melt(
+  as.data.table(iris),
+  id.vars = "Species",
+  variable.name = "name", value.name = "value"
+)
+dat <- dat[
+  , list(avg = mean(value, na.rm = TRUE), sd = sd(value, na.rm = TRUE)),
+  by = c("Species", "name")
+]
+
+tab_3 <- tabulator(
+  x = dat, rows = c("Species"),
+  columns = "name",
+  `mean (sd)` = as_paragraph(
+    as_chunk(avg),
+    " (", as_chunk(sd), ")"
+  )
+)
+ft_3 <- as_flextable(tab_3)
+ft_3
+```
+
+### Using `hidden_data` and `tabulator_colnames()` for conditional styling
+
+`hidden_data` lets you pass extra columns that are available for styling but not displayed:
+
+```r
+library(flextable)
+
+cancer_dat <- data.frame(
+  count = c(9L, 5L, 1L, 2L, 2L, 1L),
+  risktime = c(157L, 77L, 21L, 139L, 68L, 17L),
+  time = rep(as.character(1:3), 2),
+  histology = rep(as.character(1:2), each = 3),
+  stage = rep("1", 6)
+)
+
+datasup_first <- data.frame(
+  time = factor(1:3, levels = 1:3),
+  zzz = runif(3)
+)
+
+z <- tabulator(cancer_dat,
+  rows = "time",
+  columns = c("histology", "stage"),
+  datasup_first = datasup_first,
+  n = as_paragraph(as_chunk(count))
+)
+
+# Get col_keys for visible 'n' columns where stage is 1
+j <- tabulator_colnames(z, type = "columns", columns = c("n"), stage %in% 1)
+
+# Get hidden 'count' col_keys for the same selection
+src <- tabulator_colnames(z, type = "hidden", columns = c("count"), stage %in% 1)
+
+if (require("scales")) {
+  colourer <- col_numeric(palette = c("wheat", "red"), domain = c(0, 45))
+  ft_1 <- as_flextable(z)
+  ft_1 <- bg(ft_1, bg = colourer, part = "body", j = j, source = src)
+  ft_1
+}
+```
+
+## Value formatters
+
+These helper functions format cell values and are designed for use inside `as_paragraph()` / `as_chunk()` expressions:
+
+| Function | Output format |
+|---|---|
+| `fmt_avg_dev(avg, dev)` | `"mean (sd)"` |
+| `fmt_n_percent(n, pct)` | `"n (xx.x%)"` |
+| `fmt_summarizor(stat, num1, num2, cts, pcts)` | Dispatches to mean/sd, median/IQR, range, or count/percent based on `stat` |
+| `fmt_int(x)` | Integer format using flextable defaults |
+| `fmt_pct(x)` | Percentage format, e.g. `"45.0%"` |
+| `fmt_dbl(x)` | Double format using flextable defaults |
+| `fmt_header_n(n)` | `"\n(N=XX)"` for appending sample sizes to headers |
+| `fmt_signif_after_zeros(x, digits)` | Significant figures after leading zeros |
+
+## Grouped row presentations with `as_grouped_data()`
+
+`as_grouped_data()` restructures a `data.frame` so that repeated consecutive group values become labelled separator rows instead of repeated column values:
+
+```r
+as_grouped_data(
+  x,
+  groups,
+  columns = NULL,
+  expand_single = TRUE
+)
+```
+
+| Parameter | Description |
+|---|---|
+| `x` | A `data.frame`. |
+| `groups` | Column name(s) whose values will become row separators. |
+| `columns` | Columns to keep in the output. Defaults to all non-group columns. |
+| `expand_single` | If `TRUE` (default), groups with a single row still get a title separator row. |
+
+Convert the result with `as_flextable.grouped_data()`:
+
+```r
+library(data.table)
+
+CO2 <- CO2
+setDT(CO2)
+CO2$conc <- as.integer(CO2$conc)
+
+data_co2 <- dcast(CO2, Treatment + conc ~ Type,
+  value.var = "uptake", fun.aggregate = mean
+)
+data_co2 <- as_grouped_data(x = data_co2, groups = c("Treatment"))
+
+ft <- as_flextable(data_co2)
+ft <- add_footer_lines(ft, "dataset CO2 has been used for this flextable")
+ft <- add_header_lines(ft, "mean of carbon dioxide uptake in grass plants")
+ft <- set_header_labels(ft, conc = "Concentration")
+ft <- autofit(ft)
+ft
+```
+
+`as_flextable.grouped_data()` accepts `hide_grouplabel = TRUE` to suppress the `"GroupName: value"` prefix and show only the value.

@@ -1,0 +1,371 @@
+---
+title: "Inline content"
+description: "Build rich cell content from formatted text chunks, hyperlinks, equations, and Quarto markdown using compose(), mk_par(), and as_paragraph()."
+---
+
+Each flextable cell contains a single paragraph built from one or more **chunks**. A chunk is the smallest content unit — a piece of text, an image, an equation, or a special field. `as_paragraph()` assembles chunks into a paragraph; `compose()` (or its alias `mk_par()`) writes that paragraph into the table.
+
+## The composition model
+
+<Steps>
+  <Step title="Create chunks">
+    Use chunk functions such as `as_chunk()`, `as_b()`, `minibar()`, or `as_equation()` to produce chunk objects.
+  </Step>
+  <Step title="Assemble a paragraph">
+    Pass the chunks to `as_paragraph()`. Plain strings are automatically converted to chunks.
+  </Step>
+  <Step title="Write to the table">
+    Pass the paragraph to `compose()` / `mk_par()` as the `value` argument, selecting which cells to update with `i`, `j`, and `part`.
+  </Step>
+</Steps>
+
+```r
+library(flextable)
+library(officer)
+
+ft <- flextable(head(iris))
+
+ft <- compose(
+  ft,
+  j = "Sepal.Length",
+  value = as_paragraph(
+    "Sepal.Length value is ",
+    as_chunk(Sepal.Length, props = fp_text(color = "red"))
+  ),
+  part = "body"
+)
+ft <- autofit(ft)
+ft
+```
+
+`mk_par` is a direct alias for `compose` provided to avoid a name conflict with the purrr package:
+
+```r
+ft <- flextable(head(cars, n = 5), col_keys = c("speed", "dist", "comment"))
+ft <- mk_par(
+  x = ft, j = "comment",
+  i = ~ dist > 9,
+  value = as_paragraph(
+    colorize(as_i("speed: "), color = "gray"),
+    as_sup(sprintf("%.0f", speed))
+  )
+)
+ft <- set_table_properties(ft, layout = "autofit")
+ft
+```
+
+### The `use_dot` mode
+
+When `use_dot = TRUE`, each column is processed individually. The column value is available as `.` inside `as_paragraph()`, which lets you apply the same expression to several columns at once:
+
+```r
+set.seed(8)
+dat <- iris[sample.int(n = 150, size = 10), ]
+dat <- dat[order(dat$Species), ]
+
+ft <- flextable(dat)
+ft <- mk_par(ft,
+  j = ~ . - Species,
+  value = as_paragraph(
+    minibar(., barcol = "white", height = .1)
+  ),
+  use_dot = TRUE
+)
+ft <- theme_vader(ft)
+ft <- autofit(ft)
+ft
+```
+
+## Text chunk functions
+
+### `as_chunk(x, props, formatter)`
+
+The general-purpose text chunk. Pass an `fp_text_default()` or `officer::fp_text()` object to `props` to set font properties:
+
+```r
+ft <- flextable(head(iris))
+ft <- compose(ft,
+  j = "Sepal.Length",
+  value = as_paragraph(
+    as_chunk(Sepal.Length, props = fp_text_default(color = "red"))
+  ),
+  part = "body"
+)
+```
+
+When `props` is `NULL`, the cell's default formatting applies.
+
+### Convenience chunk shortcuts
+
+These functions wrap `as_chunk()` and set a single property:
+
+| Function | Effect |
+|---|---|
+| `as_b(x)` | Bold |
+| `as_i(x)` | Italic |
+| `as_strike(x)` | Strikethrough |
+| `as_sub(x)` | Subscript vertical alignment |
+| `as_sup(x)` | Superscript vertical alignment |
+| `colorize(x, color)` | Font color |
+| `as_highlight(x, color)` | Background highlight (shading) |
+
+Each accepts either a raw value or an existing chunk object:
+
+```r
+ft <- flextable(head(iris), col_keys = c("dummy"))
+ft <- compose(ft,
+  i = 1, j = "dummy", part = "header",
+  value = as_paragraph(
+    as_sub("Sepal.Length"),
+    " / ",
+    as_sup("Sepal.Width")
+  )
+)
+ft <- autofit(ft)
+ft
+```
+
+### `as_bracket(..., sep, p, s)`
+
+Pastes values together and wraps the result in brackets. Useful for confidence intervals:
+
+```r
+ft <- flextable(
+  head(iris),
+  col_keys = c("Species", "Sepal", "Petal")
+)
+ft <- compose(ft,
+  j = "Sepal",
+  value = as_paragraph(as_bracket(Sepal.Length, Sepal.Width))
+)
+ft <- compose(ft,
+  j = "Petal",
+  value = as_paragraph(as_bracket(Petal.Length, Petal.Width))
+)
+ft
+```
+
+Default separators: `sep = ", "`, `p = "("`, `s = ")"`. Override any of them:
+
+```r
+as_bracket(lo, hi, sep = "–", p = "[", s = "]")
+```
+
+## Hyperlinks
+
+`hyperlink_text(x, props, formatter, url)` creates a clickable text chunk:
+
+```r
+dat <- data.frame(
+  col = "Google it",
+  href = "https://www.google.fr/search?source=hp&q=flextable+R+package",
+  stringsAsFactors = FALSE
+)
+
+ftab <- flextable(dat)
+ftab <- compose(
+  x = ftab, j = "col",
+  value = as_paragraph(
+    "This is a link: ",
+    hyperlink_text(x = col, url = href)
+  )
+)
+ftab
+```
+
+<Note>
+Hyperlinks in Word output require the officedown package in an R Markdown context.
+</Note>
+
+## Equations
+
+`as_equation(x, width, height)` embeds a MathJax / LaTeX equation. The equatags package is required:
+
+```r
+if (require("equatags")) {
+  eqs <- c(
+    "(ax^2 + bx + c = 0)",
+    "a \\ne 0",
+    "x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}"
+  )
+  df <- data.frame(formula = eqs)
+
+  ft <- flextable(df)
+  ft <- compose(
+    x = ft, j = "formula",
+    value = as_paragraph(as_equation(formula, width = 2, height = .5))
+  )
+  ft <- align(ft, align = "center", part = "all")
+  ft <- width(ft, width = 2)
+  ft
+}
+```
+
+Equations render to MathML in Word and HTML, and to LaTeX math mode in PDF.
+
+## Word field codes
+
+`as_word_field(x, props, width, height)` inserts a Word field code such as page numbers or cross-references. Only affects Word (docx) output; other formats ignore it:
+
+```r
+# Add a running page number to a header row
+pp_docx <- function(x) {
+  x <- add_header_lines(x, "Page ")
+  x <- append_chunks(
+    x = x, i = 1, part = "header", j = 1,
+    as_word_field(x = "Page")
+  )
+  align(x, part = "header", align = "left")
+}
+
+ft <- flextable(cars)
+ft <- autofit(ft)
+ft <- pp_docx(ft)
+```
+
+<Warning>
+Field values are inserted but not computed until you open the document in Word and press **F9** (macOS: **Fn + F9**) to refresh them.
+</Warning>
+
+Apply Word-only modifications through `post_process_docx` to keep your code clean when targeting multiple output formats:
+
+```r
+set_flextable_defaults(post_process_docx = pp_docx)
+```
+
+## Quarto inline markdown
+
+`as_qmd(x, display)` embeds Quarto markdown content — cross-references, bold/italic, inline code, links, and math — inside a cell:
+
+<Steps>
+  <Step title="Install the extension">
+    Run once per Quarto project:
+
+    ```r
+    flextable::use_flextable_qmd()
+    ```
+  </Step>
+  <Step title="Add the filter to your YAML">
+    ```yaml
+    filters:
+      - flextable-qmd
+    ```
+
+    For Word output, also add the post-render filter:
+
+    ```yaml
+    filters:
+      - flextable-qmd
+      - at: post-render
+        path: _extensions/flextable-qmd/unwrap-float.lua
+    ```
+  </Step>
+  <Step title="Use as_qmd() in cells">
+    ```r
+    dat <- data.frame(
+      label = c("Bold", "Link", "Code"),
+      content = c(
+        "This is **bold** text",
+        "Visit [Quarto](https://quarto.org)",
+        "Use `print()` here"
+      )
+    )
+    ft <- flextable(dat)
+    ft <- mk_par(ft, j = "content",
+      value = as_paragraph(as_qmd(content)))
+    ft
+    ```
+  </Step>
+</Steps>
+
+<Note>
+`as_qmd()` is for inline markdown only. Block-level elements (headings, lists, fenced code blocks) are not supported inside a cell.
+</Note>
+
+## Appending and prepending chunks
+
+When you only need to add content at the start or end of existing cell content — without replacing it — use `append_chunks()` or `prepend_chunks()`:
+
+### `append_chunks(x, i, j, ..., part)`
+
+Adds chunks **after** the existing content:
+
+```r
+img.file <- file.path(R.home("doc"), "html", "logo.jpg")
+
+ft <- flextable(head(cars))
+ft <- append_chunks(ft,
+  i = c(1, 3, 5),
+  j = 1,
+  as_chunk(" "),
+  as_image(src = img.file, width = .20, height = .15)
+)
+ft <- set_table_properties(ft, layout = "autofit")
+ft
+```
+
+### `prepend_chunks(x, i, j, ..., part)`
+
+Adds chunks **before** the existing content:
+
+```r
+ft <- flextable(head(iris))
+ft <- prepend_chunks(
+  ft,
+  i = 1, j = 1,
+  colorize(as_b("Hello "), color = "red"),
+  colorize(as_i("World"), color = "magenta")
+)
+ft
+```
+
+Both functions accept the same `i`, `j`, and `part` selectors as `compose()`.
+
+## Building chunk data frames programmatically
+
+`chunk_dataframe(...)` is the low-level constructor that all chunk functions call internally. Use it when building chunk objects from an external package or when you need full control over every column:
+
+```r
+# Plain text with explicit properties
+chunk_dataframe(
+  txt = c("any text", "other text"),
+  bold = c(TRUE, TRUE)
+)
+
+# Full control over all text properties
+chunk_dataframe(
+  txt = c("any text", "other text"),
+  font.size = c(12, 10),
+  italic = c(FALSE, TRUE),
+  bold = c(FALSE, TRUE),
+  color = c("black", "red"),
+  shading.color = c("transparent", "yellow"),
+  font.family = c("Arial", "Arial")
+)
+
+# Image pattern
+chunk_dataframe(width = width, height = height, img_data = files)
+```
+
+The return value has class `"chunk"` and can be passed directly to `as_paragraph()`.
+
+## Inspecting table content
+
+Three functions expose the internal data structures of a flextable for debugging or programmatic manipulation:
+
+| Function | Returns |
+|---|---|
+| `information_data_chunk(x)` | One row per chunk per cell, with all text and image properties plus `.part`, `.row_id`, `.col_id`, `.chunk_index`. |
+| `information_data_paragraph(x)` | One row per cell, with paragraph-level formatting (alignment, padding, spacing) and position columns. |
+| `information_data_cell(x)` | One row per cell, with cell-level formatting (background, borders, vertical alignment) and position columns. |
+
+```r
+ft <- as_flextable(iris)
+head(information_data_chunk(ft))
+head(information_data_paragraph(ft))
+head(information_data_cell(ft))
+```
+
+<Warning>
+These functions expose internal data structures that may change between versions. Use them for debugging and inspection, not as a stable API.
+</Warning>

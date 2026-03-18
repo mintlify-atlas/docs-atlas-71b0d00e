@@ -1,0 +1,343 @@
+---
+title: Inline chunk elements
+description: Build formatted inline content inside as_paragraph() using text, images, equations, hyperlinks, and more.
+---
+
+Chunks are the smallest content units inside a paragraph. Use these functions inside `as_paragraph()` to compose rich cell content.
+
+## as_chunk()
+
+Add formatted text to a paragraph.
+
+```r
+as_chunk(x, props = NULL, formatter = format_fun, ...)
+```
+
+<ParamField path="x" type="any" required>
+  Text or any value that can be formatted as text using the `formatter` function.
+</ParamField>
+
+<ParamField path="props" type="fp_text">
+  An `fp_text_default()` or `officer::fp_text()` object specifying font properties. If `NULL`, the cell default is used.
+</ParamField>
+
+<ParamField path="formatter" type="function" default="format_fun">
+  A function that converts `x` to a character vector.
+</ParamField>
+
+<ParamField path="..." type="">
+  Additional arguments passed to `formatter`.
+</ParamField>
+
+### Example
+
+```r
+library(officer)
+ft <- flextable(head(iris))
+ft <- compose(
+  ft,
+  j = "Sepal.Length",
+  value = as_paragraph(
+    "Sepal.Length value is ",
+    as_chunk(Sepal.Length, props = fp_text(color = "red"))
+  ),
+  part = "body"
+)
+ft <- autofit(ft)
+ft
+```
+
+---
+
+## as_b()
+
+Produce a bold text chunk.
+
+```r
+as_b(x)
+```
+
+<ParamField path="x" type="chunk | any" required>
+  A chunk object or a value to convert to a chunk. If not already a chunk, it is converted via `as_chunk()`.
+</ParamField>
+
+---
+
+## as_i()
+
+Produce an italic text chunk.
+
+```r
+as_i(x)
+```
+
+<ParamField path="x" type="chunk | any" required>
+  A chunk object or a value converted to a chunk.
+</ParamField>
+
+---
+
+## as_sub()
+
+Produce a subscript text chunk.
+
+```r
+as_sub(x)
+```
+
+<ParamField path="x" type="chunk | any" required>
+  A chunk object or a value converted to a chunk.
+</ParamField>
+
+---
+
+## as_sup()
+
+Produce a superscript text chunk.
+
+```r
+as_sup(x)
+```
+
+<ParamField path="x" type="chunk | any" required>
+  A chunk object or a value converted to a chunk.
+</ParamField>
+
+---
+
+## as_bracket()
+
+Paste values together and wrap the result in brackets.
+
+```r
+as_bracket(..., sep = ", ", p = "(", s = ")")
+```
+
+<ParamField path="..." type="any" required>
+  Values to paste together. Each is formatted with `formatC()`.
+</ParamField>
+
+<ParamField path="sep" type="string" default=', '>
+  Separator between values.
+</ParamField>
+
+<ParamField path="p" type="string" default='('>
+  Prefix character.
+</ParamField>
+
+<ParamField path="s" type="string" default=')'>
+  Suffix character.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(iris), col_keys = c("Species", "Sepal", "Petal"))
+ft <- compose(
+  ft,
+  j = "Sepal",
+  value = as_paragraph(as_bracket(Sepal.Length, Sepal.Width))
+)
+ft
+```
+
+---
+
+## colorize()
+
+Apply a text color to a chunk.
+
+```r
+colorize(x, color)
+```
+
+<ParamField path="x" type="chunk | any" required>
+  A chunk object or a value converted to a chunk.
+</ParamField>
+
+<ParamField path="color" type="string" required>
+  A valid color string (e.g., `"red"`, `"#FF0000"`).
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(iris), col_keys = c("Sepal.Length", "dummy"))
+ft <- compose(
+  ft,
+  j = "dummy",
+  value = as_paragraph(colorize(Sepal.Length, color = "red"))
+)
+ft
+```
+
+---
+
+## as_highlight()
+
+Apply a background highlight color to a chunk.
+
+```r
+as_highlight(x, color)
+```
+
+<ParamField path="x" type="chunk | any" required>
+  A chunk object or a value converted to a chunk.
+</ParamField>
+
+<ParamField path="color" type="string" required>
+  A valid color string used as the highlight (background) color.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(iris), col_keys = c("Sepal.Length", "dummy"))
+ft <- compose(
+  ft,
+  j = "dummy",
+  value = as_paragraph(as_highlight(Sepal.Length, color = "yellow"))
+)
+ft
+```
+
+---
+
+## hyperlink_text()
+
+Create a clickable hyperlink chunk.
+
+```r
+hyperlink_text(x, props = NULL, formatter = format_fun, url, ...)
+```
+
+<ParamField path="x" type="any" required>
+  The link display text.
+</ParamField>
+
+<ParamField path="props" type="fp_text">
+  Font properties from `fp_text_default()` or `officer::fp_text()`.
+</ParamField>
+
+<ParamField path="formatter" type="function" default="format_fun">
+  A function that converts `x` to a character vector.
+</ParamField>
+
+<ParamField path="url" type="string" required>
+  The URL. URLs are not encoded; they are preserved as-is.
+</ParamField>
+
+<Note>
+  Requires the `officedown` package in R Markdown contexts with Word output.
+</Note>
+
+### Example
+
+```r
+dat <- data.frame(
+  col  = "Google it",
+  href = "https://www.google.fr/search?source=hp&q=flextable+R+package",
+  stringsAsFactors = FALSE
+)
+ft <- flextable(dat)
+ft <- compose(
+  x = ft,
+  j = "col",
+  value = as_paragraph(
+    "This is a link: ",
+    hyperlink_text(x = col, url = href)
+  )
+)
+ft
+```
+
+---
+
+## as_equation()
+
+Insert a MathJax equation chunk. Requires the `equatags` package.
+
+```r
+as_equation(x, width = 1, height = .2, unit = "in", props = NULL)
+```
+
+<ParamField path="x" type="character" required>
+  MathJax equation strings.
+</ParamField>
+
+<ParamField path="width" type="numeric" default="1">
+  Display width of the equation.
+</ParamField>
+
+<ParamField path="height" type="numeric" default="0.2">
+  Display height of the equation.
+</ParamField>
+
+<ParamField path="unit" type="string" default='in'>
+  Unit for `width` and `height`: `"in"`, `"cm"`, or `"mm"`.
+</ParamField>
+
+<ParamField path="props" type="fp_text">
+  Font properties applied to the equation text.
+</ParamField>
+
+---
+
+## as_image()
+
+Insert an image chunk from a file path.
+
+```r
+as_image(src, width = NULL, height = NULL, unit = "in", guess_size = TRUE, ...)
+```
+
+<ParamField path="src" type="character" required>
+  Path to the image file.
+</ParamField>
+
+<ParamField path="width" type="numeric">
+  Display width. Can be omitted when `guess_size = TRUE` and the `magick` package is installed.
+</ParamField>
+
+<ParamField path="height" type="numeric">
+  Display height. Can be omitted when `guess_size = TRUE` and `magick` is installed.
+</ParamField>
+
+<ParamField path="unit" type="string" default='in'>
+  Unit for `width` and `height`: `"in"`, `"cm"`, or `"mm"`.
+</ParamField>
+
+<ParamField path="guess_size" type="logical" default="TRUE">
+  If `TRUE` and `magick` is installed, image dimensions are read from the file automatically.
+</ParamField>
+
+<Note>
+  PowerPoint cannot mix images and text in a paragraph. Images are removed when outputting to PowerPoint format.
+</Note>
+
+### Example
+
+```r
+img.file <- file.path(R.home("doc"), "html", "logo.jpg")
+if (require("magick")) {
+  ft <- flextable(head(iris))
+  ft <- compose(
+    ft,
+    i = 1:3, j = 1,
+    value = as_paragraph(
+      as_image(src = img.file),
+      " ",
+      as_chunk(Sepal.Length, props = fp_text_default(color = "red"))
+    ),
+    part = "body"
+  )
+  ft <- autofit(ft)
+  ft
+}
+```
+
+## See also
+
+- [`as_paragraph()`](/reference/as-paragraph) — combine chunks into a paragraph
+- [`compose()`](/reference/compose) — apply a paragraph to selected cells
+- [`colformat_image()`](/reference/colformat) — display image file paths as images in a column

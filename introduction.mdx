@@ -1,5 +1,5 @@
 ---
-title: "flextable"
+title: "Introduction"
 description: "Create publication-ready tables for HTML, PDF, Word, PowerPoint, and more with a consistent R grammar."
 ---
 
@@ -47,7 +47,7 @@ Most R table packages are tied to a single output format. flextable solves this 
 
 ## How it works
 
-A flextable is built from a `data.frame` and consists of three parts: **header**, **body**, and **footer**. You apply formatting and layout transformations by chaining functions.
+A flextable is built from a `data.frame` and consists of three parts: **header**, **body**, and **footer**. You apply formatting and layout transformations by chaining functions — similar to the dplyr or ggplot2 workflows familiar to R users.
 
 ```r
 library(flextable)
@@ -70,3 +70,11 @@ flextable(head(mtcars)) |>
 | RTF | `save_as_rtf()` | officer |
 | PNG / SVG | `save_as_image()` | webshot2, magick |
 | R grid | `gen_grob()` | patchwork |
+
+## Resources
+
+- [User guide (flextable book)](https://ardata-fr.github.io/flextable-book/)
+- [Reference manual](https://davidgohel.github.io/flextable/reference/index.html)
+- [Gallery of examples](https://ardata.fr/en/flextable-gallery/)
+- [GitHub repository](https://github.com/davidgohel/flextable)
+- [Bug reports](https://github.com/davidgohel/flextable/issues)

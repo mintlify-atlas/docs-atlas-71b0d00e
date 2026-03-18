@@ -1,0 +1,311 @@
+---
+title: set_flextable_defaults()
+description: Get, set, and reset the global default formatting properties applied to every flextable.
+---
+
+Three functions manage the global flextable defaults:
+
+- `set_flextable_defaults()` — override one or more defaults
+- `get_flextable_defaults()` — retrieve the current defaults as a list
+- `init_flextable_defaults()` — reset all defaults to package values
+
+## set_flextable_defaults()
+
+```r
+set_flextable_defaults(
+  font.family = NULL,
+  font.size = NULL,
+  font.color = NULL,
+  text.align = NULL,
+  padding = NULL,
+  padding.bottom = NULL,
+  padding.top = NULL,
+  padding.left = NULL,
+  padding.right = NULL,
+  border.color = NULL,
+  border.width = NULL,
+  background.color = NULL,
+  line_spacing = NULL,
+  table.layout = NULL,
+  cs.family = NULL,
+  eastasia.family = NULL,
+  hansi.family = NULL,
+  decimal.mark = NULL,
+  big.mark = NULL,
+  digits = NULL,
+  pct_digits = NULL,
+  na_str = NULL,
+  nan_str = NULL,
+  fmt_date = NULL,
+  fmt_datetime = NULL,
+  extra_css = NULL,
+  scroll = NULL,
+  table_align = "center",
+  split = NULL,
+  keep_with_next = NULL,
+  tabcolsep = NULL,
+  arraystretch = NULL,
+  float = NULL,
+  fonts_ignore = NULL,
+  theme_fun = NULL,
+  post_process_all = NULL,
+  post_process_pdf = NULL,
+  post_process_docx = NULL,
+  post_process_html = NULL,
+  post_process_pptx = NULL,
+  ...
+)
+```
+
+### Return value
+
+A list of the **previous** default values. You can pass this list to `do.call(set_flextable_defaults, old)` to restore the previous state.
+
+## Parameters
+
+### Typography
+
+<ParamField path="font.family" type="string">
+  Font family for characters in the Unicode range U+0000–U+007F. In Word output, set `hansi.family` to the same value to support non-ASCII characters.
+</ParamField>
+
+<ParamField path="font.size" type="numeric">
+  Font size in points. Must be 0 or a positive integer.
+</ParamField>
+
+<ParamField path="font.color" type="string">
+  Font color as a valid color string (e.g., `"#000000"` or `"black"`).
+</ParamField>
+
+<ParamField path="cs.family" type="string">
+  Word only. Font for complex script Unicode ranges (e.g., Arabic text using `"Arial Unicode MS"`).
+</ParamField>
+
+<ParamField path="eastasia.family" type="string">
+  Word only. Font for East Asian Unicode ranges (e.g., Japanese text using `"MS Mincho"`).
+</ParamField>
+
+<ParamField path="hansi.family" type="string">
+  Word only. Font for Unicode ranges not covered by other categories.
+</ParamField>
+
+<ParamField path="line_spacing" type="numeric">
+  Line spacing multiplier. `1` is single spacing; `2` is double spacing.
+</ParamField>
+
+### Alignment and padding
+
+<ParamField path="text.align" type="string">
+  Default text alignment: `"left"`, `"right"`, `"center"`, or `"justify"`.
+</ParamField>
+
+<ParamField path="padding" type="numeric">
+  Shortcut that sets all four cell paddings (top, bottom, left, right) at once.
+</ParamField>
+
+<ParamField path="padding.bottom" type="numeric">
+  Bottom cell padding in points.
+</ParamField>
+
+<ParamField path="padding.top" type="numeric">
+  Top cell padding in points.
+</ParamField>
+
+<ParamField path="padding.left" type="numeric">
+  Left cell padding in points.
+</ParamField>
+
+<ParamField path="padding.right" type="numeric">
+  Right cell padding in points.
+</ParamField>
+
+### Borders and background
+
+<ParamField path="border.color" type="string">
+  Default border color (e.g., `"#000000"` or `"black"`).
+</ParamField>
+
+<ParamField path="border.width" type="numeric">
+  Default border width in points.
+</ParamField>
+
+<ParamField path="background.color" type="string">
+  Default cell background color.
+</ParamField>
+
+### Number and date formatting
+
+<ParamField path="decimal.mark" type="string">
+  Decimal separator used by `colformat_double()`, `colformat_num()`. See `formatC()`.
+</ParamField>
+
+<ParamField path="big.mark" type="string">
+  Thousands separator used by `colformat_double()`, `colformat_int()`, `colformat_num()`. See `formatC()`.
+</ParamField>
+
+<ParamField path="digits" type="integer">
+  Number of decimal digits used by `colformat_double()`. See `formatC()`.
+</ParamField>
+
+<ParamField path="pct_digits" type="integer">
+  Number of digits for percentage formatting.
+</ParamField>
+
+<ParamField path="na_str" type="string">
+  String displayed in place of `NA` values.
+</ParamField>
+
+<ParamField path="nan_str" type="string">
+  String displayed in place of `NaN` values.
+</ParamField>
+
+<ParamField path="fmt_date" type="string">
+  Date format string for `colformat_date()`. Follows `strptime()` syntax. Default: `"%Y-%m-%d"`.
+</ParamField>
+
+<ParamField path="fmt_datetime" type="string">
+  Datetime format string for `colformat_datetime()`. Follows `strptime()` syntax. Default: `"%Y-%m-%d %H:%M:%S"`.
+</ParamField>
+
+### Table layout
+
+<ParamField path="table.layout" type="string">
+  Column-width algorithm: `"autofit"` (default) or `"fixed"`.
+</ParamField>
+
+<ParamField path="table_align" type="string" default='center'>
+  Default horizontal alignment of the table on the page: `"left"`, `"center"`, or `"right"`.
+</ParamField>
+
+### Word-specific
+
+<ParamField path="split" type="logical">
+  If `TRUE`, enables the Word option "Allow row to break across pages".
+</ParamField>
+
+<ParamField path="keep_with_next" type="logical">
+  Default for the `paginate()` function's "keep rows together" option.
+</ParamField>
+
+### PDF (LaTeX) specific
+
+<ParamField path="tabcolsep" type="numeric">
+  Space between cell content and the left/right cell border.
+</ParamField>
+
+<ParamField path="arraystretch" type="numeric">
+  Row height relative to default height. Default: `1.5`.
+</ParamField>
+
+<ParamField path="float" type="string">
+  Floating placement in PDF: `"none"` (default, inline), `"float"` (float to best position), `"wrap-r"`, `"wrap-l"`, `"wrap-i"`, or `"wrap-o"` (text wrapping variants).
+</ParamField>
+
+<ParamField path="fonts_ignore" type="logical">
+  If `TRUE`, allows `pdflatex` to be used instead of `xelatex` or `lualatex`. Fonts are ignored because `pdflatex` does not support them.
+</ParamField>
+
+### HTML-specific
+
+<ParamField path="extra_css" type="string">
+  Additional CSS instructions to inject into the table's HTML output.
+</ParamField>
+
+<ParamField path="scroll" type="NULL | list">
+  `NULL` for no scroll, or a list to enable a scroll box. See the `scroll` element of `opts_html` in `set_table_properties()`.
+</ParamField>
+
+### Themes and post-processing
+
+<ParamField path="theme_fun" type="string | function">
+  A theme function name (character) or function applied automatically to each new flextable. Applied as the last step inside `flextable()`.
+</ParamField>
+
+<ParamField path="post_process_all" type="function">
+  A function applied to every flextable before output, regardless of format. Runs before any format-specific post-processing.
+</ParamField>
+
+<ParamField path="post_process_pdf" type="function">
+  A function applied just before the table is printed to PDF.
+</ParamField>
+
+<ParamField path="post_process_docx" type="function">
+  A function applied just before the table is printed to Word.
+</ParamField>
+
+<ParamField path="post_process_html" type="function">
+  A function applied just before the table is printed to HTML.
+</ParamField>
+
+<ParamField path="post_process_pptx" type="function">
+  A function applied just before the table is printed to PowerPoint.
+</ParamField>
+
+---
+
+## get_flextable_defaults()
+
+Retrieve the current global defaults as a named list.
+
+```r
+get_flextable_defaults()
+```
+
+### Example
+
+```r
+defaults <- get_flextable_defaults()
+defaults$font.family
+defaults$digits
+```
+
+---
+
+## init_flextable_defaults()
+
+Reset all global defaults to the package's built-in values.
+
+```r
+init_flextable_defaults()
+```
+
+---
+
+## Examples
+
+Change font color and border color, then restore the previous state:
+
+```r
+ft_1 <- qflextable(head(airquality))
+ft_1
+
+old <- set_flextable_defaults(
+  font.color   = "#AA8855",
+  border.color = "#8855AA"
+)
+ft_2 <- qflextable(head(airquality))
+ft_2
+
+do.call(set_flextable_defaults, old)
+```
+
+Set a default theme applied at creation time:
+
+```r
+set_flextable_defaults(theme_fun = theme_vanilla)
+ft <- flextable(head(mtcars))  # theme_vanilla is applied automatically
+ft
+init_flextable_defaults()
+```
+
+Apply a theme automatically at print time (captures all added rows):
+
+```r
+set_flextable_defaults(post_process_html = theme_booktabs)
+```
+
+## See also
+
+- [`themes`](/reference/themes) — available theme functions
+- [`colformat_double()`](/reference/colformat) — uses `digits`, `big.mark`, `decimal.mark`, and `na_str` defaults
+- [`set_table_properties()`](/reference/set-table-properties) — per-table layout options

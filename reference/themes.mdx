@@ -1,0 +1,238 @@
+---
+title: Themes
+description: Apply built-in visual themes to a flextable.
+---
+
+Theme functions apply a complete visual style to a flextable in one call. Unlike ggplot2 themes, flextable themes are applied **immediately** to the existing table structure. Rows or columns added after the theme call are not formatted by the theme.
+
+<Tip>
+  Apply the theme after all header, footer, and body rows have been added. To apply a theme automatically at print time (so it captures all rows), use `set_flextable_defaults(post_process_html = theme_fun, ...)` instead.
+</Tip>
+
+## theme_vanilla()
+
+External horizontal lines are black and 2 pt thick. Internal horizontal lines are 0.5 pt. Header text is bold. Text columns are left-aligned; numeric columns are right-aligned.
+
+```r
+theme_vanilla(x)
+```
+
+### Example
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_vanilla(ft)
+ft
+```
+
+---
+
+## theme_booktabs()
+
+Publication-style theme based on the LaTeX `booktabs` package. Thick borders at the top and bottom of the header and at the bottom of the body. An optional thin line separates header rows.
+
+```r
+theme_booktabs(x, bold_header = FALSE, ...)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="bold_header" type="logical" default="FALSE">
+  If `TRUE`, header text is rendered in bold.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_booktabs(ft)
+ft
+```
+
+---
+
+## theme_box()
+
+All cells have outer and inner borders. Header text is bold; footer text is italic. Text columns are left-aligned; numeric columns are right-aligned.
+
+```r
+theme_box(x)
+```
+
+### Example
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_box(ft)
+ft
+```
+
+---
+
+## theme_borderless()
+
+All borders are removed. Header text is bold. Text columns are left-aligned; numeric columns are right-aligned.
+
+```r
+theme_borderless(x)
+```
+
+### Example
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_borderless(ft)
+ft
+```
+
+---
+
+## theme_zebra()
+
+Alternating row background colors in the header and body.
+
+```r
+theme_zebra(
+  x,
+  odd_header  = "#CFCFCF",
+  odd_body    = "#EFEFEF",
+  even_header = "transparent",
+  even_body   = "transparent"
+)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="odd_header" type="string" default='#CFCFCF'>
+  Background color for odd header rows.
+</ParamField>
+
+<ParamField path="odd_body" type="string" default='#EFEFEF'>
+  Background color for odd body rows.
+</ParamField>
+
+<ParamField path="even_header" type="string" default='transparent'>
+  Background color for even header rows.
+</ParamField>
+
+<ParamField path="even_body" type="string" default='transparent'>
+  Background color for even body rows.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_zebra(ft)
+ft
+```
+
+---
+
+## theme_alafoli()
+
+Minimalist theme with transparent backgrounds, gray text, and only a bottom border under the header.
+
+```r
+theme_alafoli(x)
+```
+
+### Example
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_alafoli(ft)
+ft
+```
+
+---
+
+## theme_apa()
+
+Style conforming to the American Psychological Association (APA) publication guidelines. Uses Times New Roman, double line spacing, centered alignment, and horizontal rules at the top, bottom of the header, and bottom of the body.
+
+```r
+theme_apa(x, ...)
+```
+
+### Example
+
+```r
+ft <- flextable(head(mtcars * 22.22))
+ft <- theme_apa(ft)
+ft
+```
+
+---
+
+## theme_tron()
+
+Dark background (`#000000`) with blue borders (`#a4cee5`), orange header text (`#ec9346`), and blue body text (`#a4cee5`). Header text is bold.
+
+```r
+theme_tron(x)
+```
+
+### Example
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_tron(ft)
+ft
+```
+
+---
+
+## theme_tron_legacy()
+
+Variant of `theme_tron()` with a dark navy background (`#0C141F`), cyan borders (`#6FC3DF`), orange header text (`#DF740C`), and yellow body text (`#FFE64D`).
+
+```r
+theme_tron_legacy(x)
+```
+
+### Example
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_tron_legacy(ft)
+ft
+```
+
+---
+
+## theme_vader()
+
+Dark background (`#242424`) with red borders, light gray text (`#dfdfdf`), and bold header text. Named after Darth Vader.
+
+```r
+theme_vader(x, ...)
+```
+
+### Example
+
+```r
+ft <- flextable(head(airquality))
+ft <- theme_vader(ft)
+ft
+```
+
+## Parameters common to all themes
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object. The function stops with an error if `x` is not a flextable.
+</ParamField>
+
+## Return value
+
+All theme functions return the modified `flextable` object.
+
+## See also
+
+- [`set_flextable_defaults()`](/reference/set-flextable-defaults) — set a default theme applied at creation time
+- [`border()`](/reference/border), [`bg()`](/reference/bg), [`color()`](/reference/color) — apply individual styling properties
+- [`bold()`](/reference/bold), [`italic()`](/reference/italic) — font weight and style

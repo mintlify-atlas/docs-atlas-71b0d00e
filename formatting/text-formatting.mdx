@@ -1,0 +1,203 @@
+---
+title: "Text formatting"
+description: "Apply bold, italic, color, font size, font family, and highlights to text in a flextable."
+---
+
+flextable provides a set of convenience functions for changing text appearance. Each targets the `i` rows and `j` columns you select inside a given `part` of the table.
+
+## Bold and italic
+
+`bold()` and `italic()` each accept a boolean value and the standard selectors:
+
+```r
+library(flextable)
+
+ft <- flextable(head(iris))
+ft <- bold(ft, bold = TRUE, part = "header")   # bold every header cell
+ft <- italic(ft, italic = TRUE, part = "header") # italic every header cell
+ft
+```
+
+Both default to `part = "body"` and apply to all rows and columns when `i` and `j` are `NULL`.
+
+<Tip>
+Pass `bold = FALSE` or `italic = FALSE` to remove formatting previously applied to a selection.
+</Tip>
+
+## Font color
+
+`color()` sets the text color. Accepts any R color name or a hex string:
+
+```r
+ft <- flextable(head(mtcars))
+ft <- color(ft, color = "orange", part = "header")
+ft <- color(ft, color = "red", i = ~ qsec < 18 & vs < 1)
+ft
+```
+
+### Using a color function
+
+When `color` is a function it is called once per source column and must return a character vector of color values the same length as the number of rows:
+
+```r
+if (require("scales")) {
+  scale <- scales::col_numeric(domain = c(-1, 1), palette = "RdBu")
+  x <- as.data.frame(cor(iris[-5]))
+  x <- cbind(
+    data.frame(colname = colnames(x), stringsAsFactors = FALSE),
+    x
+  )
+  ft <- flextable(x)
+  ft <- color(ft, j = -1, color = scale, source = -1)
+  ft
+}
+```
+
+When the colored column `j` is driven by values from a different (possibly hidden) column, pass that column name to `source`.
+
+## Font size
+
+`fontsize()` sets the font size in points:
+
+```r
+ft <- flextable(head(iris))
+ft <- fontsize(ft, size = 14, part = "header")
+ft <- fontsize(ft, size = 14, j = 2)   # column 2, body rows
+ft <- fontsize(ft, size = 7,  j = 3)   # smaller text in column 3
+ft
+```
+
+## Font family
+
+`font()` changes the typeface. The `fontname` string must refer to a font that is installed on the system:
+
+```r
+library(gdtools)
+
+fontname <- "Brush Script MT"
+
+if (font_family_exists(fontname)) {
+  ft <- flextable(head(iris))
+  ft <- font(ft, fontname = fontname, part = "header")
+  ft <- font(ft, fontname = fontname, j = 5)
+  ft
+}
+```
+
+`font()` also accepts `cs.family`, `eastasia.family`, and `hansi.family` for complex-script, East-Asian, and HAnsi ranges respectively — these only affect Word and PowerPoint output.
+
+<Note>
+Use `gdtools::register_gfont()` to load Google Fonts. For HTML output the font is injected automatically into the document.
+</Note>
+
+## Text highlight
+
+`highlight()` sets the background shading behind the text (distinct from the cell background set by `bg()`):
+
+```r
+ft <- flextable(head(mtcars, n = 10))
+ft <- highlight(ft, j = "disp", i = ~ disp > 200, color = "yellow")
+ft
+```
+
+### Using a highlight function
+
+```r
+my_color_fun <- function(x) {
+  out <- rep("yellow", length(x))
+  out[x < quantile(x, .75)] <- "pink"
+  out[x < quantile(x, .50)] <- "wheat"
+  out[x < quantile(x, .25)] <- "gray90"
+  out
+}
+
+ft <- flextable(head(mtcars, n = 10))
+ft <- highlight(ft, j = ~ drat + wt + qsec, color = my_color_fun)
+ft
+```
+
+## Formula selectors for conditional formatting
+
+All text formatting functions support formula-based row selection. The formula is evaluated against the body dataset:
+
+```r
+ft <- flextable(head(mtcars, 10))
+
+# Bold rows with high horsepower
+ft <- bold(ft, i = ~ hp > 110)
+
+# Color cells in the cyl column red where cyl equals 8
+ft <- color(ft, i = ~ cyl == 8, j = "cyl", color = "red")
+
+# Larger text for rows satisfying multiple conditions
+ft <- fontsize(ft, i = ~ mpg > 20 & wt < 3, size = 13)
+ft
+```
+
+<Note>
+Formula selectors (`i = ~ condition`) only work with `part = "body"`. Header and footer parts store character representations, so numeric conditions cannot be evaluated on them.
+</Note>
+
+## Using `fp_text()` for full text control
+
+When you need to set multiple text properties in one call, use `style()` with an `officer::fp_text()` object:
+
+```r
+library(officer)
+
+# Define a text style
+bold_red <- fp_text(bold = TRUE, color = "red", font.size = 12)
+
+ft <- flextable(head(mtcars))
+ft <- style(
+  ft,
+  i = ~ hp > 100,
+  j = "hp",
+  pr_t = bold_red
+)
+ft
+```
+
+`fp_text()` properties:
+
+| Property | Type | Description |
+|---|---|---|
+| `bold` | logical | Bold weight |
+| `italic` | logical | Italic style |
+| `underlined` | logical | Underline |
+| `color` | character | Hex or R color name |
+| `shading.color` | character | Highlight color |
+| `font.size` | numeric | Size in points |
+| `font.family` | character | Font family name |
+
+### Underline and strikethrough
+
+`fp_text()` supports `underlined = TRUE` and `strike = TRUE`. These are not available as standalone convenience functions — use `style()` with an `fp_text()` object:
+
+```r
+library(officer)
+
+ft <- flextable(head(iris))
+ft <- style(
+  ft,
+  i = 1:2,
+  pr_t = fp_text(underlined = TRUE)
+)
+ft <- style(
+  ft,
+  i = 3,
+  pr_t = fp_text(strike = TRUE)
+)
+ft
+```
+
+## Quick reference
+
+| Function | Key argument | Default `part` |
+|---|---|---|
+| `bold(x, i, j, bold, part)` | `bold = TRUE` | `"body"` |
+| `italic(x, i, j, italic, part)` | `italic = TRUE` | `"body"` |
+| `color(x, i, j, color, part)` | `color` (required) | `"body"` |
+| `fontsize(x, i, j, size, part)` | `size = 11` | `"body"` |
+| `font(x, i, j, fontname, part)` | `fontname` (required) | `"body"` |
+| `highlight(x, i, j, color, part)` | `color = "yellow"` | `"body"` |

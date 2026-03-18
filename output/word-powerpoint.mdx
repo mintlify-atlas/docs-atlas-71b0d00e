@@ -1,0 +1,195 @@
+---
+title: Word and PowerPoint
+description: Save flextable objects to Word (.docx) and PowerPoint (.pptx) files, or add them to existing officer documents.
+---
+
+flextable provides two approaches for Word and PowerPoint output: convenience functions that create a new file directly, and officer integration functions for adding tables to existing documents.
+
+## Word output
+
+### Save to a new Word file
+
+`save_as_docx()` creates a Word document containing one or more tables. Each table is placed on its own section separated by a blank paragraph. If the objects are named, the names are used as `heading 2` titles above each table.
+
+```r
+library(flextable)
+library(officer)
+
+ft1 <- flextable(head(iris))
+ft2 <- flextable(head(mtcars))
+
+tf <- tempfile(fileext = ".docx")
+save_as_docx(`iris table` = ft1, `mtcars table` = ft2, path = tf)
+```
+
+### Page layout with `pr_section`
+
+Pass an `officer::prop_section` object to control page orientation, size, and margins:
+
+```r
+library(officer)
+
+sect_properties <- prop_section(
+  page_size = page_size(
+    orient = "landscape",
+    width = 8.3, height = 11.7
+  ),
+  type = "continuous",
+  page_margins = page_mar()
+)
+
+save_as_docx(
+  `iris table` = ft1, `mtcars table` = ft2,
+  path = tf, pr_section = sect_properties
+)
+```
+
+### RTF output
+
+`save_as_rtf()` works identically to `save_as_docx()` but produces an RTF file. It also accepts a `pr_section` argument and supports page headers:
+
+```r
+library(officer)
+
+sect_properties <- prop_section(
+  page_size = page_size(orient = "landscape", width = 8.3, height = 11.7),
+  type = "continuous",
+  page_margins = page_mar(),
+  header_default = block_list(
+    fpar(ftext("text for default page header")),
+    qflextable(data.frame(a = 1L))
+  )
+)
+
+tf <- tempfile(fileext = ".rtf")
+save_as_rtf(
+  `iris table` = ft1, `mtcars table` = ft2,
+  path = tf, pr_section = sect_properties
+)
+```
+
+## Adding to an existing officer document
+
+### `body_add_flextable()`
+
+Use `body_add_flextable()` to add a table to an `rdocx` object created with `officer::read_docx()`. This gives you full control over document construction:
+
+```r
+library(officer)
+
+set_flextable_defaults(
+  split = TRUE,
+  table_align = "center",
+  table.layout = "autofit"
+)
+
+ft_1 <- flextable(head(airquality, n = 20))
+ft_1 <- color(ft_1, i = ~ Temp > 70, color = "red", j = "Temp")
+ft_1 <- set_caption(
+  x = ft_1,
+  autonum = run_autonum(seq_id = "tab"),
+  caption = "Daily air quality measurements"
+)
+ft_1 <- paginate(ft_1, init = TRUE, hdr_ftr = TRUE)
+
+ft_2 <- proc_freq(mtcars, "vs", "gear")
+ft_2 <- set_caption(
+  x = ft_2,
+  autonum = run_autonum(seq_id = "tab", bkm = "mtcars"),
+  caption = as_paragraph(
+    as_b("mtcars"), " ",
+    colorize("table", color = "orange")
+  ),
+  fp_p = fp_par(keep_with_next = TRUE)
+)
+ft_2 <- paginate(ft_2, init = TRUE, hdr_ftr = TRUE)
+
+doc <- read_docx()
+doc <- body_add_flextable(doc, value = ft_1)
+doc <- body_add_par(doc, value = "")
+doc <- body_add_flextable(doc, value = ft_2)
+
+fileout <- tempfile(fileext = ".docx")
+print(doc, target = fileout)
+```
+
+**Parameters:**
+
+| Parameter | Description | Default |
+|---|---|---|
+| `x` | An `rdocx` object | |
+| `value` | A `flextable` object | |
+| `align` | `"left"`, `"center"`, or `"right"` | `NULL` (inherits from table) |
+| `pos` | Cursor position: `"after"`, `"before"`, `"on"` | `"after"` |
+| `split` | Allow row breaks across pages | `NULL` |
+| `topcaption` | Place caption above (`TRUE`) or below (`FALSE`) the table | `TRUE` |
+
+<Note>
+Prefer `set_flextable_defaults(table_align = "center")` and `set_table_properties(opts_word = list(split = TRUE))` over the `align` and `split` arguments in `body_add_flextable()`.
+</Note>
+
+### Replace content at a bookmark
+
+`body_replace_flextable_at_bkm()` replaces a bookmarked paragraph in a Word document with a flextable. The bookmark is removed as a side effect:
+
+```r
+doc <- read_docx("template.docx")  # template with a bookmark named "results_table"
+doc <- body_replace_flextable_at_bkm(
+  x = doc,
+  bookmark = "results_table",
+  value = ft
+)
+print(doc, target = "output.docx")
+```
+
+## PowerPoint output
+
+### Save to a new PowerPoint file
+
+`save_as_pptx()` creates a PowerPoint presentation with one table per slide. Named objects become slide titles:
+
+```r
+ft1 <- flextable(head(iris))
+ft2 <- flextable(head(mtcars))
+
+tf <- tempfile(fileext = ".pptx")
+save_as_pptx(`iris table` = ft1, `mtcars table` = ft2, path = tf)
+```
+
+<Note>
+PowerPoint ignores captions set with `set_caption()`. Captions are not supported in the PowerPoint format.
+</Note>
+
+### Add to an existing officer presentation
+
+`ph_with()` is the officer generic for adding content to a placeholder. flextable provides the `ph_with.flextable()` method, which converts the table to a native PowerPoint table:
+
+```r
+library(officer)
+
+ft <- flextable(head(iris))
+
+doc <- read_pptx()
+doc <- add_slide(doc, "Title and Content", "Office Theme")
+doc <- ph_with(doc, ft, location = ph_location_left())
+
+fileout <- tempfile(fileext = ".pptx")
+print(doc, target = fileout)
+```
+
+Use `officer::ph_location_type()` to target a specific placeholder type:
+
+```r
+doc <- add_slide(doc, layout = "Title and Content", master = "Office Theme")
+doc <- ph_with(doc, value = ft, location = ph_location_type(type = "body"))
+```
+
+<Note>
+Table width and height are determined by flextable cell dimensions, not by the placeholder location. Use `width()`, `height()`, `autofit()`, and `dim_pretty()` to control the table size before placing it.
+</Note>
+
+### PowerPoint limitations
+
+- PowerPoint only supports fixed table layout. Use `autofit()` to adjust column widths.
+- Images inside table cells are not supported in PowerPoint.
+- Row and column spans rendered from flextable may differ from native PowerPoint span behavior.

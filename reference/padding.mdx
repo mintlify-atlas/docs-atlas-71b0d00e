@@ -1,0 +1,100 @@
+---
+title: padding()
+description: Set cell padding (inner spacing) on selected rows and columns of a flextable.
+---
+
+`padding()` controls the space between cell content and cell borders. All padding values are in points (pts) by default.
+
+## Function signature
+
+```r
+padding(
+  x,
+  i = NULL,
+  j = NULL,
+  padding = NULL,
+  padding.top = NULL,
+  padding.bottom = NULL,
+  padding.left = NULL,
+  padding.right = NULL,
+  part = "body"
+)
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. Accepts integer indices, a one-sided formula (e.g., `~ col > 5`), or a logical vector. `NULL` selects all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Accepts integer indices, column names, or a formula. `NULL` selects all columns.
+</ParamField>
+
+<ParamField path="padding" type="number">
+  A single value (in points) applied as shortcut for all four sides: top, bottom, left, and right. Individual side arguments take precedence over this shortcut if both are supplied.
+</ParamField>
+
+<ParamField path="padding.top" type="number">
+  Top padding in points.
+</ParamField>
+
+<ParamField path="padding.bottom" type="number">
+  Bottom padding in points.
+</ParamField>
+
+<ParamField path="padding.left" type="number">
+  Left padding in points.
+</ParamField>
+
+<ParamField path="padding.right" type="number">
+  Right padding in points.
+</ParamField>
+
+<ParamField path="part" type="string" default='"body"'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Set uniform top padding across all parts:
+
+```r
+ft <- flextable(head(iris))
+ft <- theme_vader(ft)
+ft <- padding(ft, padding.top = 4, part = "all")
+ft
+```
+
+Set per-side padding on specific rows and columns:
+
+```r
+ft <- flextable(head(iris))
+ft <- theme_vader(ft)
+ft <- padding(ft, padding.top = 4, part = "all")
+ft <- padding(ft, j = 1, padding.right = 40)
+ft <- padding(ft, i = 3, padding.top = 40)
+ft <- padding(ft, padding.top = 10, part = "header")
+ft <- padding(ft, padding.bottom = 10, part = "header")
+ft <- autofit(ft)
+ft
+```
+
+<Note>
+  In PDF output, only `padding.left` and `padding.right` are applied. `padding.top` and `padding.bottom` are ignored due to LaTeX limitations. For global horizontal spacing in PDF, use `set_table_properties(opts_pdf = list(tabcolsep = 1))`.
+</Note>
+
+## See also
+
+- [`align()`](/reference/align) — set text alignment
+- [`valign()`](/reference/valign) — set vertical alignment
+- [`style()`](/reference/style) — apply multiple formatting properties at once
+- [`set_table_properties()`](/reference/set-table-properties) — set PDF column spacing with `tabcolsep`

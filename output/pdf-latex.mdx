@@ -1,0 +1,156 @@
+---
+title: PDF and LaTeX
+description: Render flextable tables in PDF documents via knitr, configure LaTeX engines, and control float behavior.
+---
+
+When knitting to PDF, `knit_print.flextable()` automatically generates LaTeX code. No setup is required beyond a working LaTeX installation.
+
+## LaTeX engine requirements
+
+The default `pdflatex` engine does not support custom font families. If your tables use system fonts (set via `set_flextable_defaults(font.family = ...)`), you must switch to `xelatex` or `lualatex`.
+
+Set the engine in the YAML header of your R Markdown or Quarto document:
+
+<Tabs>
+  <Tab title="R Markdown">
+```yaml
+---
+title: "My document"
+output:
+  pdf_document:
+    latex_engine: xelatex
+---
+```
+  </Tab>
+  <Tab title="Quarto">
+```yaml
+---
+title: "My document"
+format:
+  pdf:
+    pdf-engine: xelatex
+---
+```
+  </Tab>
+</Tabs>
+
+Alternatively, suppress the font warning and keep using `pdflatex` by setting:
+
+```r
+set_flextable_defaults(fonts_ignore = TRUE)
+```
+
+## Required LaTeX packages
+
+flextable automatically loads the following LaTeX packages via knitr metadata:
+
+- `fontspec` (xelatex/lualatex only)
+- `multirow`, `multicol`
+- `colortbl`
+- `ulem`
+- `hhline`
+- `longtable`
+- `array`
+- `hyperref`
+
+## Adding dependencies manually with `add_latex_dep()`
+
+When chunk caching is enabled, knitr uses the cached output and skips the chunk that would normally register LaTeX dependencies. Call `add_latex_dep()` in a non-cached chunk to ensure the dependencies are included:
+
+```r
+# In a non-cached setup chunk:
+add_latex_dep()
+```
+
+If your tables use float or wrap containers, pass the corresponding arguments:
+
+```r
+add_latex_dep(float = TRUE, wrapfig = TRUE)
+```
+
+## Chunk options for PDF
+
+Control LaTeX rendering per-chunk or globally:
+
+```r
+# Set globally in a setup chunk
+knitr::opts_chunk$set(
+  ft.tabcolsep = 4,
+  ft.arraystretch = 1.8,
+  ft.latex.float = "none"
+)
+```
+
+| Chunk option | Description | Default |
+|---|---|---|
+| `ft.tabcolsep` | Space (pt) between text and left/right cell border | `0` |
+| `ft.arraystretch` | Row height multiplier | `1.5` |
+| `ft.latex.float` | Float container type | `"none"` |
+
+These can also be set directly on the table object with `set_table_properties()`:
+
+```r
+ft <- set_table_properties(
+  ft,
+  opts_pdf = list(
+    tabcolsep = 4,
+    arraystretch = 1.8
+  )
+)
+```
+
+## Float behavior
+
+The `ft.latex.float` chunk option (or `set_table_properties(float = ...)`) controls how the LaTeX table is wrapped:
+
+| Value | Container | Description |
+|---|---|---|
+| `"none"` | No container | Table appears inline at its location |
+| `"float"` | `float` package | Table floats to optimal position |
+| `"wrap-r"` | `wrapfig` package | Text wraps around right side |
+| `"wrap-l"` | `wrapfig` package | Text wraps around left side |
+| `"wrap-i"` | `wrapfig` package | Inner margin (for two-column) |
+| `"wrap-o"` | `wrapfig` package | Outer margin (for two-column) |
+
+Example using a float container:
+
+````md
+```{r ft.latex.float="float"}
+ft <- flextable(head(iris))
+ft <- set_caption(ft, caption = "Iris data sample")
+ft
+```
+````
+
+## PDF limitations
+
+The following formatting properties have no effect in PDF output:
+
+- `padding.top` and `padding.bottom`
+- `line_spacing`
+- Row `height`
+- Justified text alignment (converted to left-aligned)
+- Images inside table cells
+- Equations (`as_equation()`) and hyperlinks
+
+<Warning>
+Images inside flextable cells are not rendered in PDF/LaTeX output.
+</Warning>
+
+## Font families
+
+With `xelatex` or `lualatex`, flextable loads the `fontspec` package and applies font families defined on text runs. The font must be installed on your system.
+
+To use the Liberation Sans font (included with the `gdtools` package):
+
+```r
+library(gdtools)
+register_liberationsans()
+set_flextable_defaults(font.family = "Liberation Sans")
+```
+
+To avoid font-related errors with `pdflatex`, fall back to LaTeX default fonts:
+
+```r
+set_flextable_defaults(fonts_ignore = TRUE)
+```

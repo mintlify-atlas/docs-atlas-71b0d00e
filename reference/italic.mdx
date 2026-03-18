@@ -1,0 +1,63 @@
+---
+title: italic()
+description: Set italic font decoration on selected rows and columns of a flextable.
+---
+
+`italic()` changes the font decoration (italic style) of a selection of cells in a flextable.
+
+## Function signature
+
+```r
+italic(x, i = NULL, j = NULL, italic = TRUE, part = "body")
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. Accepts integer indices, a one-sided formula (e.g., `~ col > 5`), or a logical vector. `NULL` selects all rows in the specified `part`.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Accepts integer indices, column names, a formula, or a logical vector. `NULL` selects all columns.
+</ParamField>
+
+<ParamField path="italic" type="logical" default="TRUE">
+  `TRUE` to apply italic, `FALSE` to remove it.
+</ParamField>
+
+<ParamField path="part" type="string" default='body'>
+  Which part of the table to target: `"body"`, `"header"`, `"footer"`, or `"all"`.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Make the header row italic:
+
+```r
+ft <- flextable(head(mtcars))
+ft <- italic(ft, italic = TRUE, part = "header")
+ft
+```
+
+Italicise specific rows using a formula:
+
+```r
+ft <- flextable(head(iris))
+ft <- italic(ft, i = ~ Sepal.Length > 5, j = "Species")
+ft
+```
+
+## See also
+
+- [`bold()`](/reference/bold)
+- [`fontsize()`](/reference/fontsize)
+- [`color()`](/reference/color)
+- [`style()`](/reference/style) — apply multiple formatting properties at once

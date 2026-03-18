@@ -1,0 +1,65 @@
+---
+title: save_as_image()
+description: Save a flextable as a PNG or SVG image file.
+---
+
+`save_as_image()` exports a single flextable to a PNG or SVG file using R's graphics system.
+
+<Note>
+  Captions are not part of the table image. When exporting to PNG or SVG, the caption set by `set_caption()` is not included. Captions are intended for document outputs such as Word, HTML, or PDF.
+</Note>
+
+## Function signature
+
+```r
+save_as_image(x, path, expand = 10, res = 200, ...)
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="path" type="string" required>
+  Path to the output file. Must end with `.png` or `.svg`.
+</ParamField>
+
+<ParamField path="expand" type="numeric" default="10">
+  Amount of whitespace (in pixels) to add around the table.
+</ParamField>
+
+<ParamField path="res" type="numeric" default="200">
+  Resolution of the output device in DPI.
+</ParamField>
+
+<ParamField path="..." type="">
+  Unused arguments.
+</ParamField>
+
+## Return value
+
+A string containing the full path of the generated file.
+
+## Examples
+
+```r
+library(gdtools)
+register_liberationsans()
+set_flextable_defaults(font.family = "Liberation Sans")
+
+ft <- flextable(head(mtcars))
+ft <- autofit(ft)
+tf <- tempfile(fileext = ".png")
+save_as_image(x = ft, path = tf)
+
+init_flextable_defaults()
+```
+
+## See also
+
+- [`gen_grob()`](https://ardata-fr.github.io/flextable-book/) — convert a flextable to a grob for more rendering options
+- [`save_as_docx()`](/reference/save-as-docx)
+- [`save_as_html()`](/reference/save-as-html)
+- [`save_as_pptx()`](/reference/save-as-pptx)
+- [`save_as_rtf()`](/reference/save-as-rtf)

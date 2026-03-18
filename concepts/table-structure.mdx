@@ -1,0 +1,192 @@
+---
+title: "Table structure"
+description: "How a flextable is organized into header, body, and footer parts, and how to inspect its dimensions."
+---
+
+Every flextable is divided into three parts: **header**, **body**, and **footer**. Most formatting functions accept a `part` argument that controls which part they act on.
+
+## Creating a flextable
+
+Pass any `data.frame` to `flextable()` to create a table:
+
+```r
+library(flextable)
+
+ft <- flextable(head(mtcars))
+ft
+```
+
+The function signature is:
+
+```r
+flextable(data, col_keys = names(data), cwidth = .75, cheight = .25, use_labels = TRUE)
+```
+
+- `data` — a `data.frame` (tibbles and data.tables are coerced automatically).
+- `col_keys` — the columns to display, in display order. Defaults to all column names.
+- `cwidth`, `cheight` — initial cell width and height in inches.
+- `use_labels` — if `TRUE`, column labels from labelled data will be used in the header.
+
+## The three parts
+
+<Steps>
+  <Step title="Header">
+    The header is created automatically from the column names (or `col_keys`). Each column name becomes a single header cell. If `use_labels = TRUE` and the dataset carries variable labels, those labels replace the raw column names.
+
+    ```r
+    # Default: header shows column names
+    ft <- flextable(head(iris))
+
+    # Override header labels after creation
+    ft <- set_header_labels(ft,
+      Sepal.Length = "Sepal length",
+      Sepal.Width  = "Sepal width"
+    )
+    ```
+
+    The header always has exactly one row after construction. Additional header rows can be added with `add_header_row()`.
+  </Step>
+
+  <Step title="Body">
+    The body contains the data rows from the supplied `data.frame`. The number of body rows equals `nrow(data)`.
+
+    ```r
+    ft <- flextable(head(airquality, 10))
+    # body has 10 rows
+    ```
+
+    Formatting functions target the body by default (`part = "body"`).
+  </Step>
+
+  <Step title="Footer">
+    The footer is empty by default. Add content with `add_footer_lines()`, `add_footer_row()`, or `footnote()`.
+
+    ```r
+    ft <- flextable(head(airquality)) |>
+      add_footer_lines("Source: New York State Department of Conservation")
+    ```
+  </Step>
+</Steps>
+
+## The `col_keys` parameter and blank columns
+
+`col_keys` controls which columns appear and in what order. If a name in `col_keys` does not exist in the data, flextable adds it as a blank column — useful for inserting spacing columns or gaps between groups.
+
+```r
+# Reorder columns
+ft <- flextable(head(mtcars), col_keys = c("cyl", "mpg", "hp"))
+
+# Insert a blank spacer column between two groups
+ft <- flextable(
+  head(mtcars),
+  col_keys = c("mpg", "cyl", "gap_1", "disp", "hp")
+)
+```
+
+Columns named in `col_keys` that are not in the data are created as empty character columns. They appear blank in all output formats. You can use them as visual separators.
+
+<Note>
+Duplicate values in `col_keys` are not allowed and will raise an error.
+</Note>
+
+## The `part` argument
+
+Formatting functions like `bold()`, `color()`, `bg()`, and `align()` all accept a `part` argument:
+
+| Value | Targets |
+|---|---|
+| `"body"` | Data rows (default) |
+| `"header"` | Header rows |
+| `"footer"` | Footer rows |
+| `"all"` | All three parts |
+
+```r
+ft <- flextable(head(mtcars)) |>
+  bold(part = "header") |>          # bold header only
+  bg(bg = "#f5f5f5", part = "all") |>  # grey background everywhere
+  color(color = "red", part = "body")   # red text in body only
+```
+
+When `part = "all"`, the operation is applied to each part independently. Formula row selectors (`i = ~ condition`) cannot be used with `part = "all"` or with `"header"` / `"footer"`, because those parts store only character values — see [Selectors](/concepts/selectors) for details.
+
+## Inspecting a flextable
+
+Use these functions to query the dimensions of a flextable object:
+
+```r
+ft <- flextable(head(mtcars))
+
+# Number of columns displayed
+ncol_keys(ft)
+#> [1] 11
+
+# Number of rows in a specific part
+nrow_part(ft, part = "body")
+#> [1] 6
+
+nrow_part(ft, part = "header")
+#> [1] 1
+
+nrow_part(ft, part = "footer")
+#> [1] 0
+
+# Overall dimensions: returns a list with widths and heights in inches
+dim(ft)
+```
+
+`nrow_part()` is especially useful when you need to programmatically target the last row:
+
+```r
+ft <- flextable(iris[48:52, ])
+
+# Bold the last body row
+ft <- bold(ft, i = nrow_part(ft, part = "body"), part = "body")
+```
+
+## Quick construction with `qflextable()`
+
+`qflextable()` is a shortcut that creates a flextable, sets fixed table layout, and calls `autofit()` in one step:
+
+```r
+ft <- qflextable(head(cars))
+```
+
+It is equivalent to:
+
+```r
+ft <- flextable(head(cars))
+ft <- set_table_properties(ft, layout = "fixed")
+ft <- autofit(ft)
+```
+
+Use `qflextable()` when you want a quick, well-sized table without further customization.
+
+## Pipe-friendly API
+
+All flextable functions accept a flextable object as their first argument and return a modified flextable object. This makes them composable with the native pipe (`|>`) or magrittr pipe (`%>%`):
+
+```r
+ft <- flextable(head(airquality)) |>
+  theme_vanilla() |>
+  bold(part = "header") |>
+  color(color = "#2B5797", part = "header") |>
+  add_footer_lines("Source: New York State Department of Conservation") |>
+  autofit()
+```
+
+Each call in the chain modifies the table and passes it to the next function. The final object is printed or saved.
+
+## Internal object structure
+
+A flextable is an R list of class `"flextable"`. Its top-level elements are:
+
+| Element | Description |
+|---|---|
+| `$header` | A `complex_tabpart` with header rows, styles, and content |
+| `$body` | A `complex_tabpart` with body rows, styles, and content |
+| `$footer` | A `complex_tabpart` with footer rows, styles, and content |
+| `$col_keys` | Character vector of displayed column names in order |
+| `$blanks` | Names of blank columns added from `col_keys` |
+| `$caption` | Caption settings set by `set_caption()` |
+
+Each part stores its own dataset, content (text chunks), column widths, row heights, span matrices, and style properties.

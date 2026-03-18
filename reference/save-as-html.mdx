@@ -1,0 +1,73 @@
+---
+title: save_as_html()
+description: Save one or more flextable objects into a standalone HTML file.
+---
+
+`save_as_html()` saves one or more flextable objects to a self-contained HTML file. This is useful for sharing or previewing tables outside of R Markdown. R Markdown is recommended for production documents.
+
+## Function signature
+
+```r
+save_as_html(..., values = NULL, path, lang = "en", title = "&#32;")
+```
+
+## Parameters
+
+<ParamField path="..." type="flextable" required>
+  One or more `flextable` objects, optionally named. Named objects use the name as a title above the table.
+</ParamField>
+
+<ParamField path="values" type="list">
+  A list of `flextable` objects (optionally named). If supplied, `...` is ignored.
+</ParamField>
+
+<ParamField path="path" type="string" required>
+  Path to the `.html` file to create.
+</ParamField>
+
+<ParamField path="lang" type="string" default='en'>
+  Language of the HTML document, specified as an IETF language tag (e.g., `"en"`, `"fr"`, `"de"`).
+</ParamField>
+
+<ParamField path="title" type="string" default='&#32;'>
+  HTML page title shown in the browser tab.
+</ParamField>
+
+## Return value
+
+A string containing the full path of the generated file.
+
+## Examples
+
+Save a single table:
+
+```r
+ft <- flextable(head(iris))
+tf <- tempfile(fileext = ".html")
+if (rmarkdown::pandoc_available()) {
+  save_as_html(ft, path = tf)
+}
+```
+
+Save multiple named tables with a custom page title:
+
+```r
+ft1 <- flextable(head(iris))
+ft2 <- flextable(head(mtcars))
+tf <- tempfile(fileext = ".html")
+if (rmarkdown::pandoc_available()) {
+  save_as_html(
+    `iris table`   = ft1,
+    `mtcars table` = ft2,
+    path  = tf,
+    title = "My tables"
+  )
+}
+```
+
+## See also
+
+- [`save_as_docx()`](/reference/save-as-docx)
+- [`save_as_pptx()`](/reference/save-as-pptx)
+- [`save_as_rtf()`](/reference/save-as-rtf)
+- [`save_as_image()`](/reference/save-as-image)

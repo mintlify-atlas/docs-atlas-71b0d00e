@@ -1,0 +1,196 @@
+---
+title: "Cross-tabulations and frequency tables"
+description: "Build one-way and two-way frequency tables with proc_freq(), convert R table and xtable objects, and present grouped data with as_grouped_data()."
+---
+
+Flextable provides several ways to create frequency and cross-tabulation tables. `proc_freq()` computes and renders contingency tables directly. `as_flextable()` methods for `table` and `xtable` objects convert standard R summary objects. `as_grouped_data()` restructures any data frame into a grouped-row presentation.
+
+## `proc_freq()` — SAS-style frequency tables
+
+`proc_freq()` computes a one-way or two-way contingency table and renders it as a flextable in a single step. It is inspired by SAS PROC FREQ and is designed to be compact.
+
+```r
+proc_freq(
+  x,
+  row = character(),
+  col = character(),
+  include.row_percent = TRUE,
+  include.column_percent = TRUE,
+  include.table_percent = TRUE,
+  include.table_count = TRUE,
+  weight = character(),
+  count_format_fun = fmt_int,
+  ...
+)
+```
+
+| Parameter | Description |
+|---|---|
+| `x` | A `data.frame` containing the variables to count. |
+| `row` | Column name for the row variable. |
+| `col` | Column name for the column variable. |
+| `include.row_percent` | Whether to include row percentages (default `TRUE`). |
+| `include.column_percent` | Whether to include column percentages (default `TRUE`). |
+| `include.table_percent` | Whether to include overall table percentages (default `TRUE`). |
+| `include.table_count` | Whether to include raw counts (default `TRUE`). |
+| `weight` | Column name for a weight variable. When supplied, counts are the sum of weights rather than row counts. |
+| `count_format_fun` | Function used to format count values. Defaults to `fmt_int`. |
+
+<Note>
+Exactly one or two variables must be specified using `row` and `col`. Providing zero or more than two raises an error.
+</Note>
+
+### One-way frequency table
+
+When only `row` (or only `col`) is provided, `proc_freq()` returns a simple frequency table with counts and overall percentages:
+
+```r
+library(flextable)
+
+proc_freq(mtcars, "vs")
+```
+
+### Two-way cross-tabulation
+
+When both `row` and `col` are specified, the result is a cross-tabulation with margin totals:
+
+```r
+proc_freq(mtcars, "vs", "gear")
+```
+
+Each cell in the body shows:
+- Count and overall table percentage (e.g. `5 (15.6%)`) — controlled by `include.table_count` and `include.table_percent`
+- Column percentage and/or row percentage on a second line (e.g. `33.3% ; 71.4%`) — controlled by `include.column_percent` and `include.row_percent`
+
+Margin rows and columns are labelled `"Total"`. A horizontal rule separates the data rows from the "Total" row.
+
+### Weighted counts
+
+Pass a numeric column name to `weight` to compute weighted frequencies:
+
+```r
+proc_freq(mtcars, "gear", "vs", weight = "wt")
+```
+
+### Controlling which percentages appear
+
+```r
+# Show only counts, no percentages
+proc_freq(mtcars, "vs", "gear",
+  include.row_percent = FALSE,
+  include.column_percent = FALSE,
+  include.table_percent = FALSE
+)
+
+# Show only column percentages (no row percentages)
+proc_freq(mtcars, "vs", "gear",
+  include.row_percent = FALSE
+)
+```
+
+### Output layout
+
+For two-way tables, `proc_freq()` uses `tabulator()` internally. The `.what.` column distinguishes count rows from margin-percentage rows. When both row and column percents are included, a footnote `" (1)"` marks the margin percent row explaining the format as "Columns and rows percentages".
+
+## `as_flextable()` for `table` objects
+
+R's `table()` function returns a contingency table object. `as_flextable.table()` converts it into a flextable:
+
+```r
+M <- as.table(rbind(c(762, 327, 468), c(484, 239, 477)))
+dimnames(M) <- list(
+  gender = c("F", "M"),
+  party = c("Democrat", "Independent", "Republican")
+)
+
+library(flextable)
+ft <- as_flextable(M)
+ft
+```
+
+## `as_flextable()` for `xtable` objects
+
+Objects produced by `xtable::xtable()` can be converted with `as_flextable.xtable()`:
+
+```r
+if (require("xtable")) {
+  ft <- as_flextable(xtable::xtable(head(mtcars)))
+  ft
+}
+```
+
+## Grouped row presentations with `as_grouped_data()`
+
+`as_grouped_data()` restructures a `data.frame` so that repeated values in a group column become labelled separator rows rather than repeated cell values. This produces a compact, readable grouped layout.
+
+```r
+as_grouped_data(
+  x,
+  groups,
+  columns = NULL,
+  expand_single = TRUE
+)
+```
+
+| Parameter | Description |
+|---|---|
+| `x` | A `data.frame` (data.tables and tibbles are coerced). |
+| `groups` | Column name(s) whose values become row separator labels. |
+| `columns` | Columns to include in the output. Defaults to all non-group columns. |
+| `expand_single` | If `TRUE` (default), groups with only one data row still receive a separator title row. Set to `FALSE` to suppress title rows for single-row groups. |
+
+### Example
+
+```r
+library(flextable)
+library(data.table)
+
+CO2 <- CO2
+setDT(CO2)
+CO2$conc <- as.integer(CO2$conc)
+
+data_co2 <- dcast(CO2, Treatment + conc ~ Type,
+  value.var = "uptake", fun.aggregate = mean
+)
+
+# Restructure so Treatment becomes a separator row
+data_co2 <- as_grouped_data(x = data_co2, groups = c("Treatment"))
+
+ft <- as_flextable(data_co2)
+ft <- add_footer_lines(ft, "dataset CO2 has been used for this flextable")
+ft <- add_header_lines(ft, "mean of carbon dioxide uptake in grass plants")
+ft <- set_header_labels(ft, conc = "Concentration")
+ft <- autofit(ft)
+ft <- width(ft, width = c(1, 1, 1))
+ft
+```
+
+### Hiding group label prefixes
+
+By default, the separator row reads `"Treatment: chilled"`. Set `hide_grouplabel = TRUE` in `as_flextable()` to show only `"chilled"`:
+
+```r
+ft <- as_flextable(data_co2, hide_grouplabel = TRUE)
+```
+
+## Using `as_grouped_data()` with `tabulator()`
+
+`tabulator()` also supports a spread layout through its `spread_first_col` argument in `as_flextable()`, which calls `as_grouped_data()` internally on the first row dimension. This is the primary way to use grouped rows with `summarizor()` output:
+
+```r
+library(flextable)
+
+z <- summarizor(CO2[-c(1, 4)], by = "Treatment")
+ft <- as_flextable(z, spread_first_col = TRUE, sep_w = 0)
+ft
+```
+
+## Quick reference
+
+| Function | Use when |
+|---|---|
+| `proc_freq(x, row, col)` | You need a ready-made frequency or cross-tabulation table from raw data |
+| `as_flextable(table_obj)` | You have an existing R `table()` object |
+| `as_flextable(xtable_obj)` | You have an `xtable` object |
+| `as_grouped_data()` + `as_flextable()` | You have a tidy data frame and want grouped row separators |
+| `tabulator()` with `spread_first_col = TRUE` | You are using `summarizor()` or a custom aggregation and want the first row dimension as separators |

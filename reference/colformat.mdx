@@ -1,0 +1,362 @@
+---
+title: colformat_*()
+description: Format columns by type — numeric, integer, character, logical, date, datetime, and image.
+---
+
+The `colformat_*` functions apply display formatting to columns based on their data type. They all target the `body` part by default and use the values from `get_flextable_defaults()` for their default arguments.
+
+## colformat_double()
+
+Format double (floating-point numeric) columns using `formatC()`.
+
+```r
+colformat_double(
+  x,
+  i = NULL,
+  j = NULL,
+  big.mark = get_flextable_defaults()$big.mark,
+  decimal.mark = get_flextable_defaults()$decimal.mark,
+  digits = get_flextable_defaults()$digits,
+  na_str = get_flextable_defaults()$na_str,
+  nan_str = get_flextable_defaults()$nan_str,
+  prefix = "",
+  suffix = ""
+)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="i" type="integer | formula | logical">
+  Row selector. `NULL` selects all rows.
+</ParamField>
+
+<ParamField path="j" type="integer | character | formula">
+  Column selector. Only columns of type `double` are affected; other column types are silently skipped.
+</ParamField>
+
+<ParamField path="big.mark" type="string">
+  Thousands separator. See `formatC()`. Defaults to the value in `set_flextable_defaults()`.
+</ParamField>
+
+<ParamField path="decimal.mark" type="string">
+  Decimal separator. See `formatC()`. Defaults to the value in `set_flextable_defaults()`.
+</ParamField>
+
+<ParamField path="digits" type="integer">
+  Number of digits after the decimal point. See `formatC()`. Defaults to the value in `set_flextable_defaults()`.
+</ParamField>
+
+<ParamField path="na_str" type="string">
+  String displayed for `NA` values.
+</ParamField>
+
+<ParamField path="nan_str" type="string">
+  String displayed for `NaN` values.
+</ParamField>
+
+<ParamField path="prefix" type="string" default=''>
+  String prepended to every formatted value.
+</ParamField>
+
+<ParamField path="suffix" type="string" default=''>
+  String appended to every formatted value.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(mtcars))
+ft <- colformat_double(x = ft, big.mark = ",", digits = 2, na_str = "N/A")
+autofit(ft)
+```
+
+---
+
+## colformat_int()
+
+Format integer columns.
+
+```r
+colformat_int(
+  x,
+  i = NULL,
+  j = NULL,
+  big.mark = get_flextable_defaults()$big.mark,
+  na_str = get_flextable_defaults()$na_str,
+  nan_str = get_flextable_defaults()$nan_str,
+  prefix = "",
+  suffix = ""
+)
+```
+
+<ParamField path="big.mark" type="string">
+  Thousands separator. See `format()`.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(mtcars))
+ft <- colformat_int(x = ft, j = c("vs", "am", "gear", "carb"), prefix = "# ")
+ft
+```
+
+---
+
+## colformat_num()
+
+Format numeric columns using R's `format()` function, matching typical R console output. Scientific notation is disabled and `NA` values are replaced.
+
+```r
+colformat_num(
+  x,
+  i = NULL,
+  j = NULL,
+  big.mark = get_flextable_defaults()$big.mark,
+  decimal.mark = get_flextable_defaults()$decimal.mark,
+  na_str = get_flextable_defaults()$na_str,
+  nan_str = get_flextable_defaults()$nan_str,
+  prefix = "",
+  suffix = "",
+  ...
+)
+```
+
+<ParamField path="..." type="">
+  Additional arguments passed to `format()`. Note: `scientific` and `digits` cannot be used.
+</ParamField>
+
+### Example
+
+```r
+dat <- mtcars
+dat[2, 1] <- NA
+ft <- flextable(head(dat))
+ft <- colformat_num(x = ft, big.mark = " ", decimal.mark = ",", na_str = "N/A")
+ft <- autofit(ft)
+ft
+```
+
+---
+
+## colformat_char()
+
+Format character and factor columns.
+
+```r
+colformat_char(
+  x,
+  i = NULL,
+  j = NULL,
+  na_str = get_flextable_defaults()$na_str,
+  nan_str = get_flextable_defaults()$nan_str,
+  prefix = "",
+  suffix = ""
+)
+```
+
+### Example
+
+```r
+ft <- flextable(head(iris))
+ft <- colformat_char(x = ft, j = "Species", suffix = "!")
+ft <- autofit(ft)
+ft
+```
+
+---
+
+## colformat_lgl()
+
+Format logical columns.
+
+```r
+colformat_lgl(
+  x,
+  i = NULL,
+  j = NULL,
+  true = "true",
+  false = "false",
+  na_str = get_flextable_defaults()$na_str,
+  nan_str = get_flextable_defaults()$nan_str,
+  prefix = "",
+  suffix = ""
+)
+```
+
+<ParamField path="true" type="string" default='true'>
+  String displayed for `TRUE` values.
+</ParamField>
+
+<ParamField path="false" type="string" default='false'>
+  String displayed for `FALSE` values.
+</ParamField>
+
+### Example
+
+```r
+dat <- data.frame(a = c(TRUE, FALSE), b = c(FALSE, TRUE))
+ft <- flextable(dat)
+ft <- colformat_lgl(x = ft, j = c("a", "b"))
+autofit(ft)
+```
+
+---
+
+## colformat_date()
+
+Format `Date` columns.
+
+```r
+colformat_date(
+  x,
+  i = NULL,
+  j = NULL,
+  fmt_date = get_flextable_defaults()$fmt_date,
+  na_str = get_flextable_defaults()$na_str,
+  nan_str = get_flextable_defaults()$nan_str,
+  prefix = "",
+  suffix = ""
+)
+```
+
+<ParamField path="fmt_date" type="string">
+  Date format string passed to `strptime()`. Defaults to `"%Y-%m-%d"` unless overridden with `set_flextable_defaults()`.
+</ParamField>
+
+### Example
+
+```r
+dat <- data.frame(z = Sys.Date() + 1:3, w = Sys.Date() - 1:3)
+ft <- flextable(dat)
+ft <- colformat_date(x = ft)
+ft <- autofit(ft)
+ft
+```
+
+---
+
+## colformat_datetime()
+
+Format `POSIXct` / `POSIXlt` (datetime) columns.
+
+```r
+colformat_datetime(
+  x,
+  i = NULL,
+  j = NULL,
+  fmt_datetime = get_flextable_defaults()$fmt_datetime,
+  na_str = get_flextable_defaults()$na_str,
+  nan_str = get_flextable_defaults()$nan_str,
+  prefix = "",
+  suffix = ""
+)
+```
+
+<ParamField path="fmt_datetime" type="string">
+  Datetime format string passed to `strptime()`. Defaults to `"%Y-%m-%d %H:%M:%S"` unless overridden with `set_flextable_defaults()`.
+</ParamField>
+
+### Example
+
+```r
+dat <- data.frame(z = Sys.time() + (1:3) * 24, w = Sys.Date() - (1:3) * 24)
+ft <- flextable(dat)
+ft <- colformat_datetime(x = ft)
+ft <- autofit(ft)
+ft
+```
+
+---
+
+## colformat_image()
+
+Render character columns that contain image file paths as inline images.
+
+```r
+colformat_image(
+  x,
+  i = NULL,
+  j = NULL,
+  width,
+  height,
+  na_str = get_flextable_defaults()$na_str,
+  nan_str = get_flextable_defaults()$nan_str,
+  prefix = "",
+  suffix = ""
+)
+```
+
+<ParamField path="width" type="numeric" required>
+  Image display width in inches.
+</ParamField>
+
+<ParamField path="height" type="numeric" required>
+  Image display height in inches.
+</ParamField>
+
+### Example
+
+```r
+img.file <- file.path(R.home("doc"), "html", "logo.jpg")
+
+dat <- head(iris)
+dat$Species <- as.character(dat$Species)
+dat[c(1, 3, 5), "Species"] <- img.file
+
+ft <- flextable(dat)
+ft <- colformat_image(ft, i = c(1, 3, 5), j = "Species", width = .20, height = .15)
+ft <- autofit(ft)
+ft
+```
+
+---
+
+## set_formatter()
+
+Apply custom formatter functions to specified columns. Each formatter receives a vector of column values and must return a character vector.
+
+```r
+set_formatter(x, ..., values = NULL, part = "body")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="..." type="name-value pairs">
+  Named arguments where names are column keys and values are single-argument formatter functions.
+</ParamField>
+
+<ParamField path="values" type="list | function">
+  A named list of formatter functions (names are column keys), or a single function applied to every column. If supplied, `...` is ignored.
+</ParamField>
+
+<ParamField path="part" type="string" default='body'>
+  Which part to apply formatting to: `"body"`, `"header"`, or `"footer"`. The value `"all"` is not allowed.
+</ParamField>
+
+### Example
+
+```r
+ft <- flextable(head(iris))
+ft <- set_formatter(
+  x = ft,
+  Sepal.Length = function(x) sprintf("%.02f", x),
+  Sepal.Width  = function(x) sprintf("%.04f", x)
+)
+ft <- theme_vanilla(ft)
+ft
+```
+
+## Return value
+
+All functions return the modified `flextable` object.
+
+## See also
+
+- [`set_flextable_defaults()`](/reference/set-flextable-defaults) — set global defaults for marks, digits, and NA strings
+- [`compose()`](/reference/compose) — full control over cell content with `as_paragraph()`
+- [`as_chunk()`](/reference/inline-elements) — formatted text chunks

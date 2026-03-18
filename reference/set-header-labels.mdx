@@ -1,0 +1,161 @@
+---
+title: set_header_labels() and set_header_df()
+description: Rename column labels or replace the entire header and footer from a data frame.
+---
+
+These functions modify the labels displayed in the header or footer of a flextable. `set_header_labels()` renames individual column labels in the bottom header row. `set_header_df()` and `set_footer_df()` rebuild the entire header or footer from a mapping data frame.
+
+## set_header_labels()
+
+Change the display labels in the bottom row of the header.
+
+```r
+set_header_labels(x, ..., values = NULL)
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="..." type="name-value pairs">
+  Named arguments where names are data column names and values are the replacement label strings.
+</ParamField>
+
+<ParamField path="values" type="named list | character">
+  Alternative to `...`. A named list (column name to label), or an unnamed character vector with the same length as the number of columns. If supplied, `...` is ignored.
+</ParamField>
+
+### Examples
+
+Using named arguments:
+
+```r
+ft <- flextable(head(iris))
+ft <- set_header_labels(
+  ft,
+  Sepal.Length = "Sepal length",
+  Sepal.Width  = "Sepal width",
+  Petal.Length = "Petal length",
+  Petal.Width  = "Petal width"
+)
+ft
+```
+
+Using the `values` list:
+
+```r
+ft <- flextable(head(iris))
+ft <- set_header_labels(
+  ft,
+  values = list(
+    Sepal.Length = "Sepal length",
+    Sepal.Width  = "Sepal width",
+    Petal.Length = "Petal length",
+    Petal.Width  = "Petal width"
+  )
+)
+ft
+```
+
+Using an unnamed character vector (positional, all columns must be listed):
+
+```r
+ft <- flextable(head(iris))
+ft <- set_header_labels(
+  x = ft,
+  values = c("Sepal length", "Sepal width", "Petal length", "Petal width", "Species")
+)
+ft
+```
+
+---
+
+## set_header_df()
+
+Replace all header rows using a mapping data frame. Unlike `set_header_labels()` which modifies only the bottom header row, this function rebuilds the entire header structure.
+
+The data frame must contain one column whose values match the flextable `col_keys`. This column is used as the join key. The remaining columns become header rows — the leftmost column maps to the top header row and the rightmost to the bottom.
+
+```r
+set_header_df(x, mapping = NULL, key = "col_keys")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="mapping" type="data.frame">
+  A data frame specifying header content per column. One column must match `col_keys`; all others become header rows.
+</ParamField>
+
+<ParamField path="key" type="string" default='col_keys'>
+  Name of the column in `mapping` used to join with the flextable column keys.
+</ParamField>
+
+### Example
+
+```r
+typology <- data.frame(
+  col_keys = c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "Species"),
+  what     = c("Sepal", "Sepal", "Petal", "Petal", "Species"),
+  measure  = c("Length", "Width", "Length", "Width", "Species"),
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable(head(iris))
+ft <- set_header_df(ft, mapping = typology, key = "col_keys")
+ft <- merge_h(ft, part = "header")
+ft <- merge_v(ft, j = "Species", part = "header")
+ft <- theme_vanilla(ft)
+ft <- fix_border_issues(ft)
+ft
+```
+
+---
+
+## set_footer_df()
+
+Replace all footer rows using a mapping data frame. Works identically to `set_header_df()` but targets the footer.
+
+```r
+set_footer_df(x, mapping = NULL, key = "col_keys")
+```
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="mapping" type="data.frame">
+  A data frame specifying footer content per column.
+</ParamField>
+
+<ParamField path="key" type="string" default='col_keys'>
+  Name of the column in `mapping` used to join with the flextable column keys.
+</ParamField>
+
+### Example
+
+```r
+typology <- data.frame(
+  col_keys = c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "Species"),
+  unit     = c("(cm)", "(cm)", "(cm)", "(cm)", ""),
+  stringsAsFactors = FALSE
+)
+
+ft <- set_footer_df(ft, mapping = typology, key = "col_keys")
+ft <- italic(ft, italic = TRUE, part = "footer")
+ft <- theme_booktabs(ft)
+ft <- fix_border_issues(ft)
+ft
+```
+
+## Return value
+
+All functions return the modified `flextable` object.
+
+## See also
+
+- [`add_header_row()`](/reference/add-header-footer) — add spanning header rows
+- [`add_header_lines()`](/reference/add-header-footer) — add full-width header lines
+- [`separate_header()`](/reference/add-header-footer) — split compound column names into rows
+- [`merge_h()`](/reference/merge), [`merge_v()`](/reference/merge) — merge header cells after `set_header_df()`

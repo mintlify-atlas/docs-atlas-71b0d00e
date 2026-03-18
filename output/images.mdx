@@ -1,0 +1,185 @@
+---
+title: Images and graphics
+description: Export flextable tables as PNG or SVG images, convert them to grid grobs, and combine them with ggplot2 plots using patchwork.
+---
+
+flextable can be rendered as a raster or vector image using R's grid graphics system. This is useful for including tables in presentations, reports, or composite figures.
+
+## Save as PNG or SVG
+
+`save_as_image()` saves a flextable to a PNG or SVG file. The output format is determined by the file extension:
+
+```r
+library(gdtools)
+library(flextable)
+
+register_liberationsans()
+set_flextable_defaults(font.family = "Liberation Sans")
+
+ft <- flextable(head(mtcars))
+ft <- autofit(ft)
+
+tf <- tempfile(fileext = ".png")
+save_as_image(x = ft, path = tf)
+```
+
+For SVG output, the `svglite` package must be installed:
+
+```r
+tf_svg <- tempfile(fileext = ".svg")
+save_as_image(x = ft, path = tf_svg)
+```
+
+**Parameters:**
+
+| Parameter | Description | Default |
+|---|---|---|
+| `x` | A `flextable` object | |
+| `path` | Output path ending in `.png` or `.svg` | |
+| `expand` | White space (px) to add around the table | `10` |
+| `res` | Resolution of the PNG device (DPI) | `200` |
+
+<Note>
+Captions set with `set_caption()` are not included in image output. Captions are only rendered in document formats (Word, HTML, PDF).
+</Note>
+
+## Convert to a grid grob with `gen_grob()`
+
+`gen_grob()` converts a flextable to a `grob` (grid graphics object). This is the function used internally by `save_as_image()` and the patchwork integration.
+
+```r
+library(ragg)
+library(gdtools)
+register_liberationsans()
+set_flextable_defaults(font.family = "Liberation Sans")
+
+ft <- flextable(head(mtcars))
+gr <- gen_grob(ft)
+plot(gr)
+```
+
+### `fit` argument
+
+Controls how the table adapts to the drawing surface:
+
+| Value | Behavior |
+|---|---|
+| `"auto"` (default) | Resize table proportionally to fill the viewport |
+| `"width"` | Resize columns to fit viewport width; row heights unchanged |
+| `"fixed"` | Use exact column widths and row heights from the table |
+
+### `scaling` argument
+
+Controls how text and content sizes respond to viewport size:
+
+| Value | Behavior |
+|---|---|
+| `"min"` (default) | Scale content down when viewport is smaller; do not scale up |
+| `"full"` | Scale content up or down to match viewport |
+| `"fixed"` | Never scale content |
+
+### `just` argument
+
+Justification of the viewport layout within the drawing area. Accepts the same values as `grid::grid.layout(just = ...)`. When `NULL` (default), justification is derived from `fit`.
+
+### `wrapping` argument
+
+When `TRUE` (default), text wraps at word boundaries. When `FALSE`, text only wraps at explicit newline characters.
+
+### Getting dimensions
+
+Use the `dim()` method on the grob to retrieve the rendered table size in inches:
+
+```r
+gr <- gen_grob(ft, fit = "fixed")
+dim(gr)  # returns list with $width and $height
+```
+
+<Note>
+Equations (`as_equation()`) and hyperlinks (`officer::hyperlink_ftext()`) are not rendered by `gen_grob()`. Use a `ragg`, `svglite`, or `ggiraph` device for correct rendering.
+</Note>
+
+## Combine with ggplot2 using patchwork
+
+`wrap_flextable()` wraps a flextable as a patchwork-compatible patch, so it can be combined with ggplot2 plots using `+`, `|`, or `/` operators.
+
+```r
+library(gdtools)
+font_set_liberation()
+library(ggplot2)
+library(patchwork)
+
+set_flextable_defaults(
+  font.family = "Liberation Sans",
+  font.size = 10,
+  big.mark = "",
+  border.color = "grey60"
+)
+
+dataset <- data.frame(
+  team = c(
+    "FC Bayern Munchen", "SV Werder Bremen", "Borussia Dortmund",
+    "VfB Stuttgart", "Borussia M'gladbach"
+  ),
+  matches = c(2000, 1992, 1924, 1924, 1898),
+  won     = c(1206,  818,  881,  782,  763),
+  lost    = c( 363,  676,  563,  673,  636)
+)
+dataset$win_pct  <- dataset$won  / dataset$matches * 100
+dataset$loss_pct <- dataset$lost / dataset$matches * 100
+dataset$team <- factor(dataset$team, levels = rev(dataset$team))
+
+# build a ggplot2 chart
+df_long <- reshape(dataset, direction = "long",
+  varying = list(c("loss_pct", "win_pct")),
+  v.names = "pct", timevar = "type",
+  times = c("lost", "won"), idvar = "team"
+)
+
+p <- ggplot(df_long, aes(x = pct / 100, y = team)) +
+  geom_point(aes(fill = type), size = 4, shape = 21) +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_discrete(name = NULL, guide = "none") +
+  theme_minimal(base_family = "Liberation Sans", base_size = 10)
+
+# build the flextable
+ft_dat <- dataset[, c("matches", "win_pct", "loss_pct", "team")]
+ft_dat$team <- as.character(ft_dat$team)
+
+ft <- flextable(ft_dat)
+ft <- border_remove(ft)
+ft <- bold(ft, part = "header")
+ft <- colformat_double(ft, j = c("win_pct", "loss_pct"), digits = 1, suffix = "%")
+ft <- autofit(ft)
+
+# combine with patchwork
+print(
+  wrap_flextable(ft, flex_body = TRUE, just = "right") +
+    p + plot_layout(widths = c(1.1, 2))
+)
+```
+
+### `wrap_flextable()` parameters
+
+| Parameter | Description | Default |
+|---|---|---|
+| `x` | A `flextable` object | |
+| `panel` | Table region aligned with the plot panel: `"body"`, `"full"`, `"rows"`, `"cols"` | `"body"` |
+| `space` | How table dimensions influence layout: `"free"`, `"free_x"`, `"free_y"`, `"fixed"` | `"free"` |
+| `n_row_headers` | Number of leading columns treated as row headers | `0` |
+| `flex_body` | Stretch body row heights to match adjacent plot panel height | `FALSE` |
+| `flex_cols` | Stretch data column widths to match adjacent plot panel width | `FALSE` |
+| `expand` | Expansion matching `ggplot2::expansion(add = expand)` for discrete axes | `0.6` |
+| `just` | Horizontal alignment within panel: `"left"`, `"right"`, `"center"` | `"left"` |
+
+<Note>
+`wrap_flextable()` is experimental and the API may change in future versions. It requires the `patchwork` and `gtable` packages.
+</Note>
+
+### Direct ggplot2 addition
+
+You can also add a flextable directly to a ggplot2 object using `+`. This calls `wrap_flextable()` automatically with default settings:
+
+```r
+p + ft  # equivalent to p + wrap_flextable(ft)
+```

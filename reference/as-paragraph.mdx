@@ -1,0 +1,81 @@
+---
+title: as_paragraph()
+description: Assemble one or more chunks into a paragraph that defines the content of a flextable cell.
+---
+
+`as_paragraph()` builds a paragraph from one or more chunks. Each cell in a flextable contains exactly one paragraph; a paragraph is an ordered sequence of chunks. The resulting paragraph is passed to `compose()`, `mk_par()`, `add_header_lines()`, `add_footer_lines()`, or `footnote()` to set cell content.
+
+## Function signature
+
+```r
+as_paragraph(..., list_values = NULL)
+```
+
+## Parameters
+
+<ParamField path="..." type="chunks | character" required>
+  Chunk elements that define the paragraph content. Plain character strings are automatically converted to chunks via `as_chunk()`. Supported chunk types include:
+  - `as_chunk()` — formatted text
+  - `as_b()` / `as_i()` — bold / italic shortcuts
+  - `as_sub()` / `as_sup()` — subscript / superscript
+  - `minibar()` — inline bar chart
+  - `as_image()` — image
+  - `gg_chunk()` — ggplot
+  - `as_equation()` — equation
+  - `hyperlink_text()` — hyperlink
+</ParamField>
+
+<ParamField path="list_values" type="list">
+  A list of chunk elements. If supplied, `...` is ignored.
+</ParamField>
+
+## Return value
+
+A paragraph object to be used as the `value` argument in `compose()`, `mk_par()`, `add_header_lines()`, `add_footer_lines()`, or `footnote()`.
+
+## Examples
+
+Mix formatted text with an inline minibar:
+
+```r
+ft <- flextable(airquality[sample.int(150, size = 10), ])
+ft <- compose(
+  ft,
+  j = "Wind",
+  value = as_paragraph(
+    as_chunk(Wind, props = fp_text_default(color = "orange")),
+    " ",
+    minibar(
+      value = Wind,
+      max   = max(airquality$Wind),
+      barcol = "orange",
+      bg     = "black",
+      height = .15
+    )
+  ),
+  part = "body"
+)
+ft <- autofit(ft)
+ft
+```
+
+Build a formatted caption:
+
+```r
+ft <- flextable(head(cars))
+ft <- set_caption(
+  ft,
+  as_paragraph(
+    as_b("Table: "),
+    as_chunk("cars data", props = fp_text_default(font.family = "Cambria"))
+  )
+)
+ft
+```
+
+## See also
+
+- [`as_chunk()`](/reference/inline-elements) — the primary chunk building block
+- [`compose()`](/reference/compose) — apply a paragraph to selected cells
+- [`inline-elements`](/reference/inline-elements) — all chunk helper functions
+- [`footnote()`](/reference/footnote) — pass `as_paragraph()` as footnote content

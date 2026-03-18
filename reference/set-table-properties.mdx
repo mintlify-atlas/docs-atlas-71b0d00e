@@ -1,0 +1,145 @@
+---
+title: set_table_properties()
+description: Set table-level layout, width, alignment, and output-specific options for a flextable.
+---
+
+`set_table_properties()` controls the overall layout algorithm, table width, document alignment, and output-specific behavior for HTML, Word, and PDF.
+
+## Function signature
+
+```r
+set_table_properties(
+  x,
+  layout = "fixed",
+  width = 0,
+  align = NULL,
+  opts_html = list(),
+  opts_word = list(),
+  opts_pdf = list(),
+  word_title = NULL,
+  word_description = NULL
+)
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="layout" type="string" default='"fixed"'>
+  Layout algorithm:
+
+  - `"fixed"` — column widths set by `width()` are used as-is. The `width` parameter has no effect in this mode.
+  - `"autofit"` — column widths are ignored; the table uses the `width` parameter as a proportion of the available space. Supported in HTML and Word; ignored in PowerPoint.
+</ParamField>
+
+<ParamField path="width" type="number" default="0">
+  Minimum width for the table as a proportion of the page or container width (0 to 1). Behavior varies by output format:
+
+  - **HTML** — minimum width of the space the table occupies.
+  - **Word** — preferred size; Word may not strictly respect it.
+  - **PowerPoint / PDF** — has no effect.
+
+  The default `0` means the table uses only the width necessary to display all content.
+</ParamField>
+
+<ParamField path="align" type="string">
+  Table alignment within the document. One of `"left"`, `"center"`, or `"right"`. Applies to Word, HTML, and PDF output.
+</ParamField>
+
+<ParamField path="opts_html" type="list">
+  HTML-specific options. Supported keys:
+
+  - `extra_css` *(string)* — additional CSS to inject into the table's HTML.
+  - `scroll` *(list or NULL)* — add a scroll box around the table. Options within the list:
+    - *(empty list)* — horizontal scroll only, width matches the container.
+    - `height` *(number or string)* — enables vertical scroll at the given height. Numeric values are pixels; strings must be valid CSS measures (e.g., `"500px"`).
+    - `freeze_first_column` *(logical)* — when `TRUE`, the first column is sticky and does not scroll horizontally.
+    - `add_css` *(string)* — extra CSS for the scroll container.
+  - `extra_class` *(string)* — additional CSS class names to add to the `<table>` tag.
+</ParamField>
+
+<ParamField path="opts_word" type="list">
+  Word-specific options. Supported keys:
+
+  - `split` *(logical)* — when `TRUE`, enables the Word option "Allow row to break across pages".
+  - `keep_with_next` *(logical)* — when `TRUE`, enables "Keep rows together", preventing page breaks inside the table. Useful for small tables.
+  - `repeat_headers` *(logical)* — when `TRUE`, header rows repeat at the top of each page.
+</ParamField>
+
+<ParamField path="opts_pdf" type="list">
+  PDF/LaTeX-specific options. Supported keys:
+
+  - `tabcolsep` *(number)* — horizontal space between cell content and the left/right cell border.
+  - `arraystretch` *(number)* — row height multiplier relative to the default. Default is `1.5`.
+  - `float` *(string)* — floating placement for the table. One of:
+    - `"none"` *(default)* — table appears immediately after the preceding paragraph.
+    - `"float"` — table floats to the best available position.
+    - `"wrap-r"` — wrap text around the table on the right side.
+    - `"wrap-l"` — wrap text around the table on the left side.
+    - `"wrap-i"` — wrap on the inside edge (near the binding).
+    - `"wrap-o"` — wrap on the outside edge (away from the binding).
+  - `fonts_ignore` *(logical)* — when `TRUE`, allows the `pdflatex` engine to be used; fonts are ignored because `pdflatex` does not support custom fonts (unlike `xelatex` or `lualatex`).
+  - `caption_repeat` *(logical)* — whether the caption repeats across pages. Default is `TRUE`.
+  - `footer_repeat` *(logical)* — whether the footer repeats across pages. Default is `TRUE`.
+  - `default_line_color` *(string)* — default line color, restored globally after the table is produced.
+</ParamField>
+
+<ParamField path="word_title" type="string">
+  Alternative text used as the table title in Word (accessibility metadata).
+</ParamField>
+
+<ParamField path="word_description" type="string">
+  Alternative text used as the table description in Word (accessibility metadata).
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Set autofit layout at 50% of page width:
+
+```r
+library(flextable)
+
+ft <- flextable(head(cars))
+ft <- autofit(ft)
+ft <- set_table_properties(ft, width = .5, layout = "autofit")
+ft
+```
+
+Add a scrollable HTML container with a frozen first column:
+
+```r
+set.seed(2)
+dat <- as.data.frame(setNames(lapply(1:14, function(x) rnorm(n = 20)), paste0("colname", 1:14)))
+
+ft <- flextable(dat)
+ft <- colformat_double(ft)
+ft <- bg(ft, j = 1, bg = "#DDDDDD", part = "all")
+ft <- bg(ft, i = 1, bg = "#DDDDDD", part = "header")
+ft <- autofit(ft)
+ft <- set_table_properties(
+  x = ft,
+  opts_html = list(
+    scroll = list(
+      height = "500px",
+      freeze_first_column = TRUE
+    )
+  )
+)
+ft
+```
+
+<Note>
+  PowerPoint output ignores the `"autofit"` layout setting.
+</Note>
+
+## See also
+
+- [`autofit()`](/reference/autofit) — compute and apply optimised column widths
+- [`width()`](/reference/width-height) — set explicit column widths
+- [`flextable()`](/reference/flextable) — create a flextable

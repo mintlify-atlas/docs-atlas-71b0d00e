@@ -1,0 +1,127 @@
+---
+title: set_caption()
+description: Set a caption for a flextable, with optional auto-numbering, Word style, and HTML formatting.
+---
+
+`set_caption()` attaches a caption to a flextable. When the output is Word, the caption is associated with a paragraph style and can use auto-numbering. When the output is HTML, CSS classes can be applied. PowerPoint ignores captions.
+
+<Note>
+  In Quarto documents, captions and cross-references are managed by Quarto, not flextable. `set_caption()` settings are overridden by `tbl-cap` and `label` chunk options.
+</Note>
+
+## Function signature
+
+```r
+set_caption(
+  x,
+  caption = NULL,
+  autonum = NULL,
+  word_stylename = "Table Caption",
+  fp_p = fp_par(padding = 3),
+  align_with_table = TRUE,
+  html_classes = NULL,
+  html_escape = TRUE
+)
+```
+
+## Parameters
+
+<ParamField path="x" type="flextable" required>
+  A `flextable` object.
+</ParamField>
+
+<ParamField path="caption" type="string | paragraph">
+  The caption text. Either a plain character string or a call to `as_paragraph()` for formatted content (bold, italic, mixed styles, images, or equations). Plain strings do not support Markdown syntax.
+</ParamField>
+
+<ParamField path="autonum" type="run_autonum">
+  An auto-numbering sequence object created by `officer::run_autonum()`. Affects Word output (defines the Word auto-number) and HTML/PDF output (provides the bookmark identifier). When provided, the caption is preceded by an auto-number sequence.
+</ParamField>
+
+<ParamField path="word_stylename" type="string" default='Table Caption'>
+  Word paragraph style name to associate with the caption. Available style names can be retrieved with `officer::styles_info()`. Alias: `style` (deprecated).
+</ParamField>
+
+<ParamField path="fp_p" type="fp_par" default="fp_par(padding = 3)">
+  Paragraph formatting properties from `officer::fp_par()`. Applied to HTML and Word outputs when possible.
+</ParamField>
+
+<ParamField path="align_with_table" type="logical" default="TRUE">
+  If `TRUE`, the caption alignment follows the flextable alignment. If `FALSE`, alignment is taken from `fp_p` directly.
+</ParamField>
+
+<ParamField path="html_classes" type="character">
+  One or more CSS class names to apply to the caption element in HTML output.
+</ParamField>
+
+<ParamField path="html_escape" type="logical" default="TRUE">
+  If `TRUE`, HTML entities in the caption are escaped so the caption is safe to use as text or an attribute value in an HTML document.
+</ParamField>
+
+## Return value
+
+The modified `flextable` object.
+
+## Examples
+
+Simple string caption:
+
+```r
+ft <- flextable(head(iris))
+ft <- set_caption(ft, "my caption")
+ft
+```
+
+Auto-numbered caption for Word:
+
+```r
+library(officer)
+autonum <- run_autonum(seq_id = "tab", bkm = "mtcars")
+ft <- flextable(head(mtcars))
+ft <- set_caption(ft, caption = "mtcars data", autonum = autonum)
+ft
+```
+
+Formatted caption using `as_paragraph()`:
+
+```r
+library(officer)
+ft <- flextable(head(cars))
+ft <- set_caption(
+  ft,
+  as_paragraph(
+    as_chunk("Table: ", props = fp_text_default(bold = TRUE)),
+    as_chunk("cars data", props = fp_text_default(font.family = "Cambria"))
+  ),
+  word_stylename = "Table Caption"
+)
+ft
+```
+
+## R Markdown chunk options
+
+You can set captions via knitr chunk options instead of calling `set_caption()` directly:
+
+```r
+#| tab.id: bookmark_id
+#| tab.cap: caption text
+flextable(head(cars))
+```
+
+Available chunk options include:
+
+| Option | Description |
+|---|---|
+| `tab.id` | Caption ID or bookmark |
+| `tab.cap` | Caption text |
+| `tab.cap.style` | Word style name for the caption |
+| `tab.topcaption` | Display caption above the table (`TRUE`) |
+| `tab.lp` | Caption sequence identifier (default `"tab:"`) |
+| `tab.cap.pre` | Prefix before auto-number (default `"Table "`) |
+| `tab.cap.sep` | Separator after auto-number (default `" :"`) |
+
+## See also
+
+- [`officer::run_autonum()`](https://davidgohel.github.io/officer/) — create auto-numbering sequences
+- [`officer::fp_par()`](https://davidgohel.github.io/officer/) — paragraph formatting properties
+- [`as_paragraph()`](/reference/as-paragraph) — build formatted captions
